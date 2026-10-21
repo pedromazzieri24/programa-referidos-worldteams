@@ -4,6 +4,7 @@ import { diasHasta, formatDia, formatFecha, formatUsd } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { ESTADOS, MOTIVOS, TIPO_REFERENTE } from "@/lib/textos";
 import type { InfoPrograma, MiReferido, Perfil } from "@/lib/tipos";
+import { AvisoIngreso } from "../components/AvisoIngreso";
 import { Seguimiento } from "../components/Seguimiento";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,8 @@ function Tarjeta({ titulo, valor, nota, destacada = false }: { titulo: string; v
   );
 }
 
-export default async function MyReferralsPage() {
+export default async function MyReferralsPage({ searchParams }: PageProps<"/my-referrals">) {
+  const { welcome } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims.sub) redirect("/login");
@@ -74,6 +76,7 @@ export default async function MyReferralsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
+      {welcome && <AvisoIngreso />}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">My referrals</h1>

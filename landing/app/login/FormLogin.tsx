@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { enviarSinVaciar } from "../components/enviarSinVaciar";
 import { Mensaje } from "../components/Mensaje";
 import { useCuentaRegresiva } from "../components/useCuentaRegresiva";
 import { ingresar } from "../acciones-auth";
@@ -10,7 +11,7 @@ export function FormLogin() {
   const restante = useCuentaRegresiva(estado);
 
   return (
-    <form action={accion} className="mt-8 space-y-5">
+    <form onSubmit={enviarSinVaciar(accion)} className="mt-8 space-y-5">
       <div>
         <label htmlFor="email" className="etiqueta">Email</label>
         <input id="email" name="email" type="email" required className="campo" autoComplete="email" />

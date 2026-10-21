@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SENIORITY } from "@/lib/textos";
 import type { Busqueda } from "@/lib/tipos";
+import { AvisoIngreso } from "../components/AvisoIngreso";
 import { FormReferir } from "./FormReferir";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReferPage({ searchParams }: PageProps<"/refer">) {
-  const { role } = await searchParams;
+  const { role, welcome } = await searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims.sub) redirect("/login");
@@ -32,6 +33,7 @@ export default async function ReferPage({ searchParams }: PageProps<"/refer">) {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
+      {welcome && <AvisoIngreso />}
       <h1 className="text-3xl font-bold">Refer someone</h1>
       <p className="mt-2 text-sm text-zinc-600">
         We&apos;ll email them to confirm they want to take part. We don&apos;t use their data until they say yes.

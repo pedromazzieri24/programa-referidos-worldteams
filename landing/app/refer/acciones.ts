@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RECHAZOS_REFERIDO } from "@/lib/textos";
@@ -63,6 +63,8 @@ export async function referir(_prev: EstadoForm, formData: FormData): Promise<Es
   if (error || !resultado?.ok) {
     await supabase.storage.from("cvs").remove([path]);
     if (error) console.error("crear_referido:", error.message);
+    // Un rechazo de la base igual gasta cupo (P4): se refresca la página para que el contador lo muestre.
+    if (resultado) refresh();
     const mensaje = (resultado?.motivo && RECHAZOS_REFERIDO[resultado.motivo]) || "We couldn't save the referral. Please try again.";
     return { ok: false, mensaje };
   }

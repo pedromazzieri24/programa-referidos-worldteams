@@ -24,5 +24,8 @@ export async function GET(request: NextRequest) {
     ok = !(await supabase.auth.verifyOtp({ type, token_hash: tokenHash })).error;
   }
 
-  return NextResponse.redirect(new URL(ok ? next : "/login?error=link", origin));
+  // welcome=1: el mail abrió una pestaña nueva y la del pedido sigue abierta; la página muestra AvisoIngreso.
+  const destino = new URL(ok ? next : "/login?error=link", origin);
+  if (ok) destino.searchParams.set("welcome", "1");
+  return NextResponse.redirect(destino);
 }

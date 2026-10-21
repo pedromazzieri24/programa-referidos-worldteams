@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
 import { CampoLinkedin } from "../components/CampoLinkedin";
+import { enviarSinVaciar } from "../components/enviarSinVaciar";
 import { Mensaje } from "../components/Mensaje";
 import { PaisTelefono } from "../components/PaisTelefono";
 import { referir } from "./acciones";
@@ -19,7 +20,7 @@ export function FormReferir({ busquedas, preseleccion }: { busquedas: Opcion[]; 
   }, [estado]);
 
   return (
-    <form ref={form} action={accion} className="mt-8 space-y-5" key={estado?.ok ? estado.mensaje : "form"}>
+    <form ref={form} onSubmit={enviarSinVaciar(accion)} className="mt-8 space-y-5" key={estado?.ok ? estado.mensaje : "form"}>
       <div>
         <label htmlFor="busqueda_id" className="etiqueta">Role</label>
         <select id="busqueda_id" name="busqueda_id" required className="campo" defaultValue={preseleccion}>

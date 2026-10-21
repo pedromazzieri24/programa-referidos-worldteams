@@ -1,6 +1,6 @@
 # Programa de referidos WorldTeams — Esquema
 
-**Objetivo.** Pasar de ~500 a ~1.000 ingresos de candidatos por mes **sin bajar la calidad**. El programa aporta volumen (cualquiera puede referir) y cuida la calidad pagando solo por contrataciones que duran. Se mide: referidos por mes, % que confirma, % que pasa el screening, contrataciones y costo por contratación, abierto por tipo de referente.
+**Objetivo.** Pasar de ~500 a ~1.000 ingresos de candidatos por mes **sin bajar la calidad**. El programa aporta volumen (cualquiera puede referir) y cuida la calidad pagando solo por contrataciones que duran. Un referido cuenta como ingreso cuando el candidato confirma que quiere participar: recién ahí entra a la base. Se mide contra el embudo actual: hoy el 60 % de los ingresos pasa el screening y el 9 % se coloca. Si los referidos superan esas tasas, el programa trae más calidad que el canal actual. Indicadores: referidos por mes, % que confirma, % que pasa el screening, colocaciones y costo por colocación, abiertos por tipo de referente.
 
 ## Quién puede referir
 Cualquier persona que se registra y entra con un link a su mail (magic link). Hay dos grupos:
@@ -35,6 +35,8 @@ Cualquier persona que se registra y entra con un link a su mail (magic link). Ha
 7. **Pagar por contratación que dura** es la defensa principal: cargar basura no paga.
 
 ## Dimensionamiento
+**Embudo actual (dato de WorldTeams, por mes):** 500 ingresos → 300 entrevistados (60 %) → 200 disponibles para presentar (40 %) → 135 presentados a un cliente (27 %) → **45 colocados (9 %)**.
+
 Para sumar *R* ingresos por mes con el programa hacen falta **R ÷ referidos por referente activo** referentes activos.
 
 | Ingresos que aporta el programa | 1 referido por referente al mes | 2 referidos por referente al mes |
@@ -42,4 +44,8 @@ Para sumar *R* ingresos por mes con el programa hacen falta **R ÷ referidos por
 | 250/mes (la mitad del objetivo) | 250 referentes activos | 125 referentes activos |
 | 500/mes (todo el objetivo) | 500 referentes activos | 250 referentes activos |
 
-Si la gente de WorldTeams (equipo + colocados) son unos pocos cientos y solo una parte refiere todos los meses, no alcanzan para cubrir la meta. **Por eso el programa es abierto.** *Supuestos pendientes de validar con WorldTeams:* qué cuenta como "ingreso" en el embudo (pregunta 1 del mail) y el tamaño de la red actual.
+- **La red propia no alcanza.** WorldTeams coloca unas 45 personas por mes (unas 540 por año, si el ritmo se mantuvo). Ni aunque todas refirieran a alguien cada mes llegarían con holgura a la meta, y en la práctica refiere solo una parte. **Por eso el programa es abierto.**
+- **Costo esperado.** Se paga solo por colocación: si los referidos convierten como hoy (9 %), cada ingreso por referido cuesta en promedio entre USD 18 y 90 como máximo (el 9 % de un premio de 200 a 1.000), porque además tiene que seguir activo a los 90 días.
+- **Riesgo.** 9 de cada 10 referidos no se colocan, así que la mayoría de los referentes no cobra. Lo mitiga el panel de seguimiento; en una segunda etapa, un pago en dos tramos.
+
+*Supuestos:* referidos por referente activo por mes (se mide desde el primer mes) y tamaño de la red actual.

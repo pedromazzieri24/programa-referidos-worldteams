@@ -12,6 +12,9 @@ export const ESTADOS: Record<string, { texto: string; color: string }> = {
   anulado: { texto: "Reward voided", color: "bg-red-100 text-red-900" },
 };
 
+// Al entrar con el magic link: el cliente de correo lo abre en otra pestaña y la del pedido queda abierta.
+export const AVISO_INGRESO = "You're signed in. You can close the other tab, where you asked for the link.";
+
 export const MOTIVOS: Record<string, string> = {
   "rechazó": "They chose not to take part",
   "venció": "They didn't reply in time",

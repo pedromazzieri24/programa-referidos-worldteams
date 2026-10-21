@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { CampoLinkedin } from "../components/CampoLinkedin";
+import { enviarSinVaciar } from "../components/enviarSinVaciar";
 import { Mensaje } from "../components/Mensaje";
 import { PaisTelefono } from "../components/PaisTelefono";
 import { useCuentaRegresiva } from "../components/useCuentaRegresiva";
@@ -30,7 +31,7 @@ export function FormRegistro() {
   }
 
   return (
-    <form action={accion} className="mt-8 space-y-5">
+    <form onSubmit={enviarSinVaciar(accion)} className="mt-8 space-y-5">
       <div>
         <label htmlFor="nombre" className="etiqueta">Full name</label>
         <input id="nombre" name="nombre" required className="campo" autoComplete="name" />
