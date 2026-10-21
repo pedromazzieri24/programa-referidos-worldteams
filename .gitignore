@@ -1,0 +1,12 @@
+# dependencias y build
+node_modules/
+.next/
+out/
+
+# variables de entorno (claves): nunca al repo
+.env*
+
+# varios
+.DS_Store
+.vercel
+*.tsbuildinfo
