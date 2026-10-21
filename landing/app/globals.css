@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* Identidad visual tomada de worldteams.com (20/10): verde oscuro + lima, Space Grotesk para títulos y Manrope para texto. */
+:root {
+  --background: #ffffff;
+  --foreground: #131313;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-wt-verde: #142d2b;   /* fondo del hero */
+  --color-wt-negro: #131313;   /* textos y barra de navegación */
+  --color-wt-lima: #d0ef76;    /* botones y resaltados */
+  --color-wt-crema: #fff7f3;   /* fondos de sección */
+  --color-wt-teal: #58958c;    /* acento secundario */
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-space-grotesk);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-space-grotesk);
+}
+
+@layer components {
+  .campo {
+    @apply mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-wt-teal focus:ring-2 focus:ring-wt-lima focus:outline-none;
+  }
+  .etiqueta {
+    @apply block text-sm font-medium text-zinc-700;
+  }
+  /* Botones "píldora" como en worldteams.com. */
+  .boton {
+    @apply inline-flex items-center justify-center rounded-full bg-wt-lima px-5 py-2 font-display text-sm text-wt-negro transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .boton-secundario {
+    @apply inline-flex items-center justify-center rounded-full border border-current px-5 py-2 font-display text-sm transition hover:bg-black/5 disabled:opacity-60;
+  }
+  .resaltado {
+    @apply bg-wt-lima px-1 whitespace-nowrap text-wt-negro;
+  }
+}
