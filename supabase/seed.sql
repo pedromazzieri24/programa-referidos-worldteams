@@ -6,17 +6,18 @@ insert into montos_incentivo (seniority, grupo_referente, monto_usd) values
   ('semi_senior', 'externo', 400), ('semi_senior', 'wt', 600),
   ('senior',      'externo', 600), ('senior',      'wt', 900);
 
+-- En inglés: la landing está en inglés, como el sitio de WorldTeams.
 insert into busquedas (titulo, especialidad, seniority, descripcion, prioritaria) values
-  ('Ingeniero/a MEP Senior', 'Ingeniería MEP', 'senior',
-   'Diseño de instalaciones mecánicas, eléctricas y sanitarias para edificios comerciales en EE. UU. Revit MEP, normativa ASHRAE/NEC, inglés avanzado.', true),
-  ('Especialista en Revit', 'Arquitectura / BIM', 'semi_senior',
-   'Modelado arquitectónico en Revit para estudios de Texas y Florida. Familias, documentación y coordinación con ingenierías. Inglés intermedio-avanzado.', false),
-  ('Dibujante CAD Junior', 'Documentación técnica', 'junior',
-   'Documentación de planos en AutoCAD bajo supervisión. Deseable conocimiento básico de Revit. Inglés intermedio.', false),
-  ('Ingeniero/a Estructural Senior', 'Ingeniería estructural', 'senior',
-   'Cálculo de estructuras de hormigón y acero según códigos ACI/AISC. ETABS, SAP2000. Inglés avanzado.', true),
-  ('Coordinador/a BIM', 'BIM', 'semi_senior',
-   'Coordinación de modelos federados, detección de interferencias (Navisworks) y estándares BIM. Inglés avanzado.', false);
+  ('Senior MEP Engineer', 'MEP Engineering', 'senior',
+   'Design of mechanical, electrical and plumbing systems for US commercial buildings. Revit MEP, ASHRAE/NEC codes. Advanced English.', true),
+  ('Revit Specialist', 'Architecture / BIM', 'semi_senior',
+   'Architectural modeling in Revit for firms in Texas and Florida. Families, construction documents and coordination with engineering teams. Upper-intermediate English.', false),
+  ('Junior CAD Drafter', 'Construction Documents', 'junior',
+   'AutoCAD drafting under supervision. Basic Revit knowledge is a plus. Intermediate English.', false),
+  ('Senior Structural Engineer', 'Structural Engineering', 'senior',
+   'Concrete and steel structural design under ACI/AISC codes. ETABS, SAP2000. Advanced English.', true),
+  ('BIM Coordinator', 'BIM', 'semi_senior',
+   'Federated model coordination, clash detection (Navisworks) and BIM standards. Advanced English.', false);
 
 -- Candidatos que se postularon solos hace poco: referirlos tiene que dar "duplicado".
 insert into candidatos (nombre, email, email_norm, linkedin_url, linkedin_norm, pais, origen, postulacion_directa_at) values

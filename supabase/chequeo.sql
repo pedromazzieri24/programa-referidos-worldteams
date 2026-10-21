@@ -5,7 +5,7 @@ with funciones_esperadas(nombre) as (values
   ('cfg'), ('norm_email'), ('norm_linkedin'), ('norm_telefono'), ('grupo_referente'), ('monto_para'),
   ('actor_actual'), ('handle_new_user'), ('referidos_antes_de_cambio'), ('referidos_despues_de_cambio'),
   ('crear_referido'), ('datos_consentimiento'), ('confirmar_consentimiento'), ('cerrar_no_confirmado'),
-  ('rechazar_consentimiento'), ('mis_referidos'), ('cupo_restante'), ('marcar_contratado'), ('marcar_pagada'),
+  ('rechazar_consentimiento'), ('mis_referidos'), ('cupo_restante'), ('info_programa'), ('marcar_contratado'), ('marcar_pagada'),
   ('revision_diaria'), ('tomar_tareas'), ('completar_tarea'), ('guardar_puntaje')
 ),
 chequeos(orden, area, chequeo, esperado, obtenido) as (

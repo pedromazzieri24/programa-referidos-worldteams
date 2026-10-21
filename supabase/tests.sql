@@ -24,8 +24,8 @@ declare
   u_recru   uuid := '00000000-0000-4000-8000-000000000003';
   u_tope    uuid := '00000000-0000-4000-8000-000000000004';
   u_sinconf uuid := '00000000-0000-4000-8000-000000000005';
-  b_mep uuid := (select id from busquedas where titulo = 'Ingeniero/a MEP Senior');
-  b_revit uuid := (select id from busquedas where titulo = 'Especialista en Revit');
+  b_mep uuid := (select id from busquedas where titulo = 'Senior MEP Engineer');
+  b_revit uuid := (select id from busquedas where titulo = 'Revit Specialist');
   r jsonb;
   v_ref referentes;
   v_martin uuid;
@@ -73,7 +73,7 @@ begin
     r := crear_referido(b_mep, 'Martín', 'martin@test.invalid', null, null, null, u_ext::text || '/x.pdf');
     perform pg_temp.chk('CV en la carpeta de otro usuario → error', false, 'no debería llegar acá');
   exception when others then
-    perform pg_temp.chk('CV en la carpeta de otro usuario → error', sqlerrm = 'Ruta de CV inválida', sqlerrm);
+    perform pg_temp.chk('CV en la carpeta de otro usuario → error', sqlerrm = 'Invalid CV path', sqlerrm);
   end;
 end $$;
 
@@ -83,8 +83,8 @@ declare
   u_ext     uuid := '00000000-0000-4000-8000-000000000002';
   u_recru   uuid := '00000000-0000-4000-8000-000000000003';
   u_tope    uuid := '00000000-0000-4000-8000-000000000004';
-  b_mep uuid := (select id from busquedas where titulo = 'Ingeniero/a MEP Senior');
-  b_revit uuid := (select id from busquedas where titulo = 'Especialista en Revit');
+  b_mep uuid := (select id from busquedas where titulo = 'Senior MEP Engineer');
+  b_revit uuid := (select id from busquedas where titulo = 'Revit Specialist');
   r jsonb;
   v_martin uuid := (select r.id from referidos r join candidatos c on c.id = r.candidato_id
                     where c.email_norm = 'martin.sosa@test.invalid');
@@ -103,7 +103,7 @@ begin
   perform pg_temp.chk('Otro referente carga a Martín con otro mail pero el mismo LinkedIn → duplicado',
     r ->> 'motivo' = 'duplicado', r::text);
   perform pg_temp.chk('P4: el mensaje de duplicado no da información del candidato',
-    r ->> 'mensaje' = 'Esta persona ya estaba en contacto con WorldTeams, así que este referido no suma.');
+    r ->> 'mensaje' = 'This person was already in touch with WorldTeams, so this referral does not count.');
   r := crear_referido(b_revit, 'Carolina Díaz', 'carolina.diaz@example.com', null, null, null, null);
   perform pg_temp.chk('Candidata que se postuló sola hace 2 meses → duplicado', r ->> 'motivo' = 'duplicado', r::text);
   r := crear_referido(b_revit, 'Valentina Ruiz', 'valentina.ruiz@example.com', null, null, null, null);
@@ -131,14 +131,14 @@ begin
   perform pg_temp.como(null);
   v_token := (select token_consentimiento from referidos where id = v_martin);
   perform pg_temp.chk('La página de consentimiento ve solo nombres de pila, búsqueda y estado',
-    datos_consentimiento(v_token) ->> 'referente' = 'Lucía' and datos_consentimiento(v_token) ->> 'busqueda' = 'Ingeniero/a MEP Senior');
+    datos_consentimiento(v_token) ->> 'referente' = 'Lucía' and datos_consentimiento(v_token) ->> 'busqueda' = 'Senior MEP Engineer');
   r := confirmar_consentimiento(v_token);
   perform pg_temp.chk('Martín confirma → en proceso y CV encolado para puntuar',
     (r ->> 'ok')::boolean and (select estado from referidos where id = v_martin) = 'en_proceso'
     and exists (select 1 from tareas where referido_id = v_martin and tipo = 'puntuar_cv'), r::text);
   r := confirmar_consentimiento(v_token);
-  perform pg_temp.chk('Segundo clic en confirmar no cambia nada',
-    (select count(*) from tareas where referido_id = v_martin and tipo = 'puntuar_cv') = 1, r::text);
+  perform pg_temp.chk('Segundo clic en confirmar no cambia nada (código already_confirmed)',
+    (select count(*) from tareas where referido_id = v_martin and tipo = 'puntuar_cv') = 1 and r ->> 'codigo' = 'already_confirmed', r::text);
 
   r := rechazar_consentimiento((select token_consentimiento from referidos where id = v_valen));
   perform pg_temp.chk('P2: Valentina dice "No me interesa" → no confirmado (rechazó) y aviso al referente',
@@ -222,6 +222,8 @@ begin
   perform pg_temp.chk('mis_referidos() muestra solo los de Lucía',
     (select count(*) from mis_referidos()) = 2
     and (select bool_and(candidato in ('Martín Sosa', 'Valentina Ruiz')) from mis_referidos()));
+  perform pg_temp.chk('mis_referidos() muestra la recompensa estimada (MEP senior, WorldTeams, prioritaria = USD 1000)',
+    (select recompensa_estimada from mis_referidos() where candidato = 'Martín Sosa') = 1000);
 
   i := (select count(*) from tomar_tareas(1000) where tipo = 'mail_consentimiento' and datos ->> 'candidato_email' is not null);
   perform pg_temp.chk('tomar_tareas() entrega los datos que necesita el mail', i > 0, i::text);

@@ -310,7 +310,7 @@ begin
       insert into tareas (tipo, referido_id) values ('aviso_contratacion', new.id);
     else
       -- Contratado fuera de la ventana de 6 meses: la atribución venció y no hay recompensa.
-      v_detalle := jsonb_build_object('recompensa', 'no corresponde: contratación fuera de la ventana');
+      v_detalle := jsonb_build_object('reward', 'not applicable: hired outside the attribution window');
     end if;
   end if;
 
@@ -354,39 +354,39 @@ declare
   v_en_base boolean;
   v_referido_id uuid;
   v_ventana interval := make_interval(months => cfg('ventana_meses')::int);
-  v_msg_duplicado constant text := 'Esta persona ya estaba en contacto con WorldTeams, así que este referido no suma.';
+  v_msg_duplicado constant text := 'This person was already in touch with WorldTeams, so this referral does not count.';
 begin
   perform set_config('app.actor', 'referente', true);
 
   select * into v_ref from referentes where auth_user_id = auth.uid();
   if v_ref.id is null then
-    raise exception 'Tenés que registrarte para referir';
+    raise exception 'You need to sign up to refer';
   end if;
   if v_email is null or coalesce(trim(p_nombre), '') = '' or p_busqueda_id is null then
-    raise exception 'Faltan datos obligatorios del candidato (nombre, mail o búsqueda)';
+    raise exception 'Missing required candidate data (name, email or role)';
   end if;
   -- El CV tiene que estar en la carpeta del propio referente (nadie apunta al archivo de otro).
   if p_cv_path is not null and split_part(p_cv_path, '/', 1) <> auth.uid()::text then
-    raise exception 'Ruta de CV inválida';
+    raise exception 'Invalid CV path';
   end if;
 
   -- Tope: se cuentan todas las cargas del mes, aceptadas o rechazadas.
   if (select count(*) from intentos_referido
       where referente_id = v_ref.id and created_at >= date_trunc('month', now())) >= cfg('tope_mensual')::int then
     return jsonb_build_object('ok', false, 'motivo', 'tope',
-      'mensaje', 'Llegaste al máximo de ' || cfg('tope_mensual') || ' referidos de este mes. Vas a poder cargar más el mes que viene.');
+      'mensaje', 'You reached the limit of ' || cfg('tope_mensual') || ' referrals this month. You can refer again next month.');
   end if;
 
   if exists (select 1 from staff_recruiting where email = v_ref.email) then
     insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'recruiting');
     return jsonb_build_object('ok', false, 'motivo', 'recruiting',
-      'mensaje', 'El equipo de recruiting no participa del programa de referidos.');
+      'mensaje', 'The recruiting team cannot take part in the referral program.');
   end if;
 
   if grupo_referente(v_ref.id) = 'externo' and not cfg('externos_habilitados')::boolean then
     insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'externos_deshabilitados');
     return jsonb_build_object('ok', false, 'motivo', 'externos_deshabilitados',
-      'mensaje', 'Por ahora el programa está abierto solo a gente de WorldTeams.');
+      'mensaje', 'For now the program is only open to WorldTeams people.');
   end if;
 
   if v_email = v_ref.email
@@ -394,13 +394,13 @@ begin
      or (v_telefono is not null and v_telefono = v_ref.telefono_norm) then
     insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'autorreferido');
     return jsonb_build_object('ok', false, 'motivo', 'autorreferido',
-      'mensaje', 'No podés referirte a vos mismo.');
+      'mensaje', 'You cannot refer yourself.');
   end if;
 
   if not exists (select 1 from busquedas where id = p_busqueda_id and estado = 'abierta') then
     insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'busqueda_no_disponible');
     return jsonb_build_object('ok', false, 'motivo', 'busqueda_no_disponible',
-      'mensaje', 'Esa búsqueda ya no está abierta.');
+      'mensaje', 'That role is no longer open.');
   end if;
 
   -- ¿Ya existe? Por mail o por LinkedIn.
@@ -457,7 +457,7 @@ begin
   insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'aceptado');
 
   return jsonb_build_object('ok', true, 'referido_id', v_referido_id,
-    'mensaje', 'Listo. Le mandamos un mail a ' || trim(p_nombre) || ' para que confirme que quiere participar.');
+    'mensaje', 'Done. We emailed ' || trim(p_nombre) || ' to confirm they want to take part.');
 end;
 $$;
 
@@ -490,21 +490,22 @@ begin
   select * into v_r from referidos where token_consentimiento = p_token for update;
 
   if v_r.id is null then
-    return jsonb_build_object('ok', false, 'mensaje', 'El link no es válido.');
+    return jsonb_build_object('ok', false, 'codigo', 'invalid', 'mensaje', 'This link is not valid.');
   elsif v_r.estado <> 'pendiente_consentimiento' then
     -- Idempotente: un segundo clic no cambia nada.
-    return jsonb_build_object('ok', v_r.estado <> 'no_confirmado', 'mensaje',
-      case when v_r.estado = 'no_confirmado' then 'Este link ya no está activo.'
-           else 'Ya habías confirmado. ¡Gracias!' end);
+    return case when v_r.estado = 'no_confirmado'
+      then jsonb_build_object('ok', false, 'codigo', 'inactive', 'mensaje', 'This link is no longer active.')
+      else jsonb_build_object('ok', true, 'codigo', 'already_confirmed', 'mensaje', 'You already confirmed. Thank you!') end;
   elsif v_r.consentimiento_vence_at < now() then
-    return jsonb_build_object('ok', false, 'mensaje', 'El plazo para confirmar venció.');
+    return jsonb_build_object('ok', false, 'codigo', 'expired', 'mensaje', 'The deadline to confirm has passed.');
   end if;
 
   update referidos set estado = 'en_proceso' where id = v_r.id;
   update candidatos set consentimiento_at = now() where id = v_r.candidato_id;
   insert into tareas (tipo, referido_id) values ('puntuar_cv', v_r.id);
 
-  return jsonb_build_object('ok', true, 'mensaje', '¡Gracias! El equipo de WorldTeams va a revisar tu perfil y te va a contactar.');
+  return jsonb_build_object('ok', true, 'codigo', 'confirmed',
+    'mensaje', 'Thank you! The WorldTeams team will review your profile and get in touch.');
 end;
 $$;
 
@@ -547,17 +548,19 @@ begin
   select * into v_r from referidos where token_consentimiento = p_token for update;
 
   if v_r.id is null then
-    return jsonb_build_object('ok', false, 'mensaje', 'El link no es válido.');
+    return jsonb_build_object('ok', false, 'codigo', 'invalid', 'mensaje', 'This link is not valid.');
   elsif v_r.estado <> 'pendiente_consentimiento' then
-    return jsonb_build_object('ok', false, 'mensaje', 'Este link ya no está activo.');
+    return jsonb_build_object('ok', false, 'codigo', 'inactive', 'mensaje', 'This link is no longer active.');
   end if;
 
   perform cerrar_no_confirmado(v_r.id, 'rechazó');
-  return jsonb_build_object('ok', true, 'mensaje', 'Listo, no vamos a usar tus datos. Gracias por avisarnos.');
+  return jsonb_build_object('ok', true, 'codigo', 'declined',
+    'mensaje', 'Done, we will not use your data. Thanks for letting us know.');
 end;
 $$;
 
 -- Panel del referente: solo sus referidos y solo lo que necesita ver (sin puntaje de IA ni datos del candidato).
+-- Los mensajes que devuelven las funciones están en inglés y traen un `codigo`/`motivo`: el texto final lo pone la landing.
 create function mis_referidos()
 returns table (
   referido_id uuid,
@@ -569,13 +572,16 @@ returns table (
   recompensa_usd numeric,
   recompensa_estado text,
   elegible_desde date,
-  created_at timestamptz
+  created_at timestamptz,
+  recompensa_estimada numeric,   -- lo que cobraría si lo contratan hoy (misma fórmula que la recompensa real)
+  fecha_contratacion date
 )
 language sql stable security definer
 set search_path = public
 as $$
   select r.id, c.nombre, b.titulo, r.estado, r.motivo_rechazo, r.exclusividad_hasta,
-         rc.monto_usd, rc.estado, rc.elegible_desde, r.created_at
+         rc.monto_usd, rc.estado, rc.elegible_desde, r.created_at,
+         monto_para(r.id), r.fecha_contratacion
   from referidos r
   join referentes rf on rf.id = r.referente_id
   join candidatos c on c.id = r.candidato_id
@@ -594,6 +600,21 @@ as $$
   from intentos_referido i
   join referentes rf on rf.id = i.referente_id
   where rf.auth_user_id = auth.uid() and i.created_at >= date_trunc('month', now())
+$$;
+
+-- Lo que muestra la página de inicio: montos y reglas. Solo lo público de config (no los dominios ni otros parámetros).
+create function info_programa() returns jsonb
+language sql stable security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'montos', (select jsonb_object_agg(seniority || ':' || grupo_referente, monto_usd) from montos_incentivo),
+    'bono_prioritaria_usd', cfg('bono_prioritaria_usd')::numeric,
+    'tope_mensual', cfg('tope_mensual')::int,
+    'dias_hasta_pago', cfg('dias_hasta_pago')::int,
+    'dias_consentimiento', cfg('dias_consentimiento')::int,
+    'ventana_meses', cfg('ventana_meses')::int,
+    'externos_habilitados', cfg('externos_habilitados')::boolean)
 $$;
 
 -- ============================================================
@@ -666,8 +687,8 @@ begin
       update recompensas
       set estado = 'anulada',
           motivo_anulacion = case when v_rc.fecha_baja is not null
-                                  then 'El contratado se fue antes de los ' || cfg('dias_hasta_pago') || ' días'
-                                  else 'El referente ya no está activo' end
+                                  then 'The hire left before ' || cfg('dias_hasta_pago') || ' days'
+                                  else 'The referrer is no longer active' end
       where id = v_rc.id;
       update referidos set estado = 'anulado' where id = v_rc.referido_id;
       insert into tareas (tipo, referido_id) values ('aviso_recompensa_anulada', v_rc.referido_id);
@@ -785,6 +806,7 @@ grant execute on function crear_referido(uuid, text, text, text, text, text, tex
 grant execute on function mis_referidos() to authenticated;
 grant execute on function cupo_restante() to authenticated;
 grant execute on function datos_consentimiento(text) to anon, authenticated;
+grant execute on function info_programa() to anon, authenticated;
 grant execute on function confirmar_consentimiento(text) to anon, authenticated;
 grant execute on function rechazar_consentimiento(text) to anon, authenticated;
 grant execute on all functions in schema public to service_role;
