@@ -116,6 +116,18 @@ stateDiagram-v2
 - **CV:** bucket privado; cada referente sube solo a su carpeta y n8n los lee con la clave secreta.
 - Las funciones internas (cola de tareas, revisión diaria, contratación, pago) solo las ejecuta n8n o un admin.
 
+## Funciones que usa la landing
+
+| Función | Quién la llama | Qué hace |
+|---|---|---|
+| `info_programa()` | Cualquiera | Montos y reglas para la página de inicio (sin exponer `config`) |
+| `crear_referido(...)` | Referente logueado | Aplica todas las reglas y registra el referido. Devuelve `{ok, motivo}` |
+| `cupo_restante()` | Referente logueado | Cuántas cargas le quedan este mes |
+| `mis_referidos()` | Referente logueado | Su panel: estado, recompensa real o estimada, hasta cuándo vale |
+| `datos_consentimiento(token)`, `confirmar_consentimiento(token)`, `rechazar_consentimiento(token)` | El candidato, con el link del mail | Muestran y registran su respuesta. Devuelven `{ok, codigo}` |
+
+Las funciones devuelven **códigos** y no textos: el idioma lo pone la landing.
+
 ## Cómo se prueba
 
-`supabase/tests.sql` crea usuarios de prueba, ejercita las 35 reglas (registro, autorreferido, duplicados, tope, recruiting, consentimiento, recompensas, baja, ventana y permisos del panel), borra lo que creó y muestra el resultado de cada caso.
+`supabase/tests.sql` crea usuarios de prueba, ejercita 36 casos (registro, autorreferido, duplicados, tope, recruiting, consentimiento, recompensas, baja, ventana, panel y cola de tareas), borra lo que creó y muestra el resultado de cada caso. `supabase/chequeo.sql` verifica estructura, permisos y datos iniciales sin modificar nada. Los cambios sobre una base ya creada están en `supabase/migraciones/`.
