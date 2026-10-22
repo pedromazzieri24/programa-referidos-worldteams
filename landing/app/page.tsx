@@ -3,6 +3,7 @@ import { formatUsd } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { SENIORITY } from "@/lib/textos";
 import type { Busqueda, InfoPrograma } from "@/lib/tipos";
+import { BarraPago } from "./components/BarraPago";
 import { Calculadora } from "./components/Calculadora";
 import { Faq } from "./components/Faq";
 import { Seguimiento } from "./components/Seguimiento";
@@ -63,7 +64,7 @@ export default async function Home() {
             <div className="relative rotate-1 rounded-2xl bg-white/5 p-5 ring-1 ring-white/15 backdrop-blur">
               <p className="font-display text-xs tracking-widest text-zinc-400 uppercase">Your dashboard · example</p>
               {[
-                { nombre: "Martín S.", rol: "Revit Specialist", estado: "contratado", nota: "Payout in 42 days", monto: 600 },
+                { nombre: "Martín S.", rol: "Revit Specialist", estado: "contratado", restantes: 42, monto: 600 },
                 { nombre: "Carla M.", rol: "BIM Coordinator", estado: "en_proceso", nota: "Interviewing", monto: 600 },
               ].map((e) => (
                 <div key={e.nombre} className="mt-4 rounded-xl bg-wt-negro/60 p-4">
@@ -76,7 +77,11 @@ export default async function Home() {
                   <div className="mt-3">
                     <Seguimiento estado={e.estado} diasHastaPago={info.dias_hasta_pago} oscuro />
                   </div>
-                  <p className="mt-2 text-xs text-zinc-400">{e.nota}</p>
+                  {e.restantes != null ? (
+                    <BarraPago total={info.dias_hasta_pago} restantes={e.restantes} estado={e.estado} oscuro />
+                  ) : (
+                    <p className="mt-2 text-xs text-zinc-400">{e.nota}</p>
+                  )}
                 </div>
               ))}
             </div>

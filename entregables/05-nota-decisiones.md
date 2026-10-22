@@ -18,6 +18,8 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 | Programa abierto, con más incentivo para la gente de WorldTeams | Duplicar los ingresos exige volumen y la red propia no alcanza. La calidad se cuida pagando solo por contratación |
 | Se paga a los 90 días de una contratación que dura | Es la principal defensa antiabuso: cargar basura no paga |
 | El tipo de referente sale del mail corporativo, no de lo que declara la persona | Quien declara su tipo cobra más si miente. El link al mail corporativo lo prueba sin trabajo manual |
+| El registro pide solo nombre, mail y relación con WorldTeams | Cada campo de más frena a quien quiere referir. País y datos de pago se piden al cobrar; mientras tanto, la autorreferencia se controla por mail |
+| El panel muestra una barra hacia el pago recién desde la contratación | Desde ahí la cercanía al pago es real. Antes, 9 de cada 10 no se colocan y una cuenta regresiva prometería de más |
 | Recruiting no participa | En un equipo chico, la regla "nadie evalúa a su propio referido" no alcanza |
 | El candidato tiene que aceptar antes de que se procese nada | Son datos de un tercero. Si no acepta en 14 días, se borra su CV |
 | El tope de 10 por mes cuenta también los rechazos, y un duplicado recibe un mensaje genérico | El formulario no tiene que servir para averiguar quién está buscando trabajo |
@@ -43,16 +45,18 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 - Etapas reales del proceso en el panel del referente.
 - Código de 6 dígitos en el mail de login, además del link.
 - Normalizar los `+alias` de Gmail y mostrar en el panel el motivo real de una anulación.
+- Pedirle al referente el país y los datos de pago cuando tiene una recompensa aprobada (hoy, administración los coordina a mano).
 
 ## Segunda etapa, en orden
 
 1. **Integración con el ATS**, para que la regla de duplicados vea toda la base de candidatos.
 2. **Integración con el CRM**, para que la contratación y la baja entren solas.
-3. **Pago en dos tramos:** una parte cuando el perfil queda disponible para presentar y el resto a los 90 días.
-4. **n8n en un servidor** (hoy corre en mi computadora) y **mail transaccional** con el dominio de WorldTeams.
-5. **Link directo al CV** en el aviso a recruiting (hoy trae la ruta del archivo).
-6. Link personal para que el candidato cargue sus datos, landing en español y portugués, y antifraude avanzado.
+3. **Pago en dos tramos:** una parte cuando el perfil queda disponible para presentar y el resto a los 90 días. En el panel, sería un segundo hito en la barra hacia el pago.
+4. **Autocompletar el referido desde el CV:** leer el PDF en nuestro servidor y sacar el mail, el teléfono y el LinkedIn con patrones. Sin IA, porque el CV de un tercero no sale a otro servicio antes de que el candidato acepte.
+5. **n8n en un servidor** (hoy corre en mi computadora) y **mail transaccional** con el dominio de WorldTeams.
+6. **Link directo al CV** en el aviso a recruiting (hoy trae la ruta del archivo).
+7. Link personal para que el candidato cargue sus datos, landing en español y portugués, y antifraude avanzado.
 
 ## Cómo usé la IA
 
-Trabajé con Claude Code en todo el proceso, con una regla fija: la IA propone cada cambio con su porqué y sus alternativas, y ninguna decisión de negocio entra sin mi OK. Todo lo que propuso lo probé: 37 tests de reglas, 25 del código de la automatización y 17 casos de punta a punta (`PRUEBAS.md`). Cada iteración, con lo que acepté y lo que corregí, está en [`BITACORA-IA.md`](../BITACORA-IA.md).
+Trabajé con Claude Code en todo el proceso, con una regla fija: la IA propone cada cambio con su porqué y sus alternativas, y ninguna decisión de negocio entra sin mi OK. Todo lo que propuso lo probé: 37 tests de reglas, 25 del código de la automatización y 19 casos de punta a punta (`PRUEBAS.md`). Cada iteración, con lo que acepté y lo que corregí, está en [`BITACORA-IA.md`](../BITACORA-IA.md).

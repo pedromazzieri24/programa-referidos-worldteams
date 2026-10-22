@@ -18,6 +18,17 @@
   --font-display: var(--font-space-grotesk);
 }
 
+/* La barra hacia el pago se llena al cargar (solo si la persona no pidió menos movimiento: motion-safe). */
+@theme {
+  --animate-llenar: llenar 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+
+  @keyframes llenar {
+    from {
+      width: 0;
+    }
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }

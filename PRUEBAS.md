@@ -7,6 +7,7 @@ El sistema se prueba en dos niveles, que se complementan:
 | **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 37 casos en verde (22/10) |
 | **2. Prueba de punta a punta** (manual) | Que todo funcione junto, como lo usaría una persona: la landing, el login por mail, el CV, la base y el panel | A mano, en la landing local, con los personajes de la demo. Se verifica en pantalla y con consultas SQL | 10 casos en verde (21/10) |
 | **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 7 casos en verde (22/10) |
+| **2c. Mejoras de la landing** (manual) | El registro corto y la línea de meta hacia el pago | En la landing local, con una cuenta nueva y el panel de una referente con un contratado | 2 casos en verde (22/10) |
 
 **Por qué los dos:** los tests de reglas comprueban que la base decide bien, pero no pasan por la pantalla. La prueba de punta a punta encontró cosas que los tests no podían ver: un contador desactualizado, un formulario que se vaciaba y una tarea que quedaba en la cola sin sentido (ver "Hallazgos").
 
@@ -74,6 +75,13 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 | **N8N-05** | Corte a mitad de camino (no planificado) | Se cortó la conexión con Supabase justo después de mandar los mails y antes de cerrar las tareas | Las tareas quedan "en curso" y se retoman a los 10 minutos | ✅ Se retomaron solas. El mail salió dos veces, como estaba documentado |
 | **N8N-06** | Alerta de error | Una tarea agotó sus 3 intentos (Gmail no respondió) y, después, n8n no pudo conectarse a Supabase | Registro en la tabla `errores` y alerta por Telegram | ✅ Después de corregir el formato de la alerta (ver hallazgos) |
 | **N8N-07** | Una sola alerta por problema | Mandar la misma falla crítica al webhook de errores, dos veces juntas y una tercera después | La tercera se registra pero no alerta | ✅ Las dos simultáneas alertaron las dos (n8n guarda la memoria del workflow al terminar); la tercera, solo registro. En un corte las fallas llegan de a una por minuto |
+
+### Mejoras de la landing (22/10, rama `mejoras-front`)
+
+| # | Caso | Qué se hizo | Resultado esperado | Obtenido |
+|---|---|---|---|---|
+| **E2E-12** | Registro corto | Registrarse en `/signup` con un alias nuevo (`+corto`), eligiendo "None of these", y entrar con el link | Solo pide nombre, mail y relación. La tarjeta elegida se sombrea y el aviso del mail corporativo aparece solo con las opciones de WorldTeams. El referente queda creado con su tipo según el dominio, como antes, y con país, teléfono y área vacíos | ✅ Entró directo a `/refer` (10 cargas disponibles). Referente `externo`, sin verificar, con país, teléfono y área en `null`. La pantalla, también en el celular y eligiendo con el teclado |
+| **E2E-13** | Línea de meta hacia el pago | Ver en el panel de Lucía a Martín contratado y llevarlo a mitad de camino (`elegible_desde` adelantado); los estados aprobado y pagado, con datos de ejemplo | Desde la contratación, al lado del monto: una barra con la meta en el día del pago, los días que faltan y una frase según el avance. La tarjeta mide lo mismo que antes. Antes de la contratación queda solo la línea de pasos | ✅ Martín: "89 days to go", "The countdown is on" y "Hired Oct 21, 2026. Payout on Jan 19, 2027." A mitad de camino, "Halfway there". Las tarjetas miden 178 px con o sin barra. En el celular, la línea de pasos muestra solo la etiqueta del paso actual (antes se pisaban) |
 
 ---
 

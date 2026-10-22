@@ -5,11 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 import { ESTADOS, MOTIVOS, TIPO_REFERENTE } from "@/lib/textos";
 import type { InfoPrograma, MiReferido, Perfil } from "@/lib/tipos";
 import { AvisoIngreso } from "../components/AvisoIngreso";
+import { BarraPago } from "../components/BarraPago";
 import { Seguimiento } from "../components/Seguimiento";
 
 export const dynamic = "force-dynamic";
 
 const ACTIVOS = ["pendiente_consentimiento", "en_proceso", "contratado"];
+
+// Desde la contratación (con recompensa) el referido muestra la línea de meta hacia el pago, al lado del monto.
+function conBarra(r: MiReferido) {
+  return r.estado === "elegible_pago" || r.estado === "pagado" || (r.estado === "contratado" && r.elegible_desde != null);
+}
 
 // La línea de abajo de cada referido: qué sigue, en una frase.
 function proximoPaso(r: MiReferido, diasHastaPago: number) {
@@ -20,8 +26,10 @@ function proximoPaso(r: MiReferido, diasHastaPago: number) {
       return `They're in the selection process. Valid until ${formatFecha(r.vale_hasta)}.`;
     case "contratado": {
       if (!r.elegible_desde) return "Hired outside the referral window: no reward for this one.";
-      const dias = diasHasta(r.elegible_desde);
-      return dias > 0 ? `Payout in ${dias} days (${formatDia(r.elegible_desde)}).` : "Payout check in progress.";
+      const contratado = r.fecha_contratacion ? `Hired ${formatDia(r.fecha_contratacion)}. ` : "";
+      return diasHasta(r.elegible_desde) > 0
+        ? `${contratado}Payout on ${formatDia(r.elegible_desde)}.`
+        : `${contratado}Payout check in progress.`;
     }
     case "elegible_pago":
       return "Your reward is approved. Payment is on its way.";
@@ -118,29 +126,41 @@ export default async function MyReferralsPage({ searchParams }: PageProps<"/my-r
           {referidos.map((r) => {
             const estado = ESTADOS[r.estado] ?? { texto: r.estado, color: "bg-zinc-100" };
             const monto = r.recompensa_usd ?? r.recompensa_estimada;
+            const barra = conBarra(r);
+            // En pantalla ancha, dos columnas: la línea de meta usa el espacio libre a la derecha y la tarjeta no crece.
             return (
-              <li key={r.referido_id} className="rounded-2xl border border-zinc-200 p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-lg font-semibold">{r.candidato}</p>
-                    <p className="text-sm text-zinc-500">
-                      {r.busqueda} · referred {formatFecha(r.created_at)}
+              <li
+                key={r.referido_id}
+                className="grid gap-x-10 gap-y-5 rounded-2xl border border-zinc-200 p-5 lg:grid-cols-[minmax(0,1fr)_16rem]"
+              >
+                <div>
+                  <p className="font-display text-lg font-semibold">{r.candidato}</p>
+                  <p className="text-sm text-zinc-500">
+                    {r.busqueda} · referred {formatFecha(r.created_at)}
+                  </p>
+                </div>
+                <div className="lg:row-span-2 lg:text-right">
+                  <span className={`rounded-full px-2.5 py-1 font-display text-xs font-medium ${estado.color}`}>{estado.texto}</span>
+                  {monto != null && (
+                    <p className={`mt-2 font-display text-sm ${r.estado === "anulado" ? "text-zinc-400 line-through" : ""}`}>
+                      {formatUsd(monto)}
+                      <span className="text-zinc-500">{r.recompensa_usd == null ? " potential" : ""}</span>
                     </p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`rounded-full px-2.5 py-1 font-display text-xs font-medium ${estado.color}`}>{estado.texto}</span>
-                    {monto != null && (
-                      <p className={`mt-2 font-display text-sm ${r.estado === "anulado" ? "text-zinc-400 line-through" : ""}`}>
-                        {formatUsd(monto)}
-                        <span className="text-zinc-500">{r.recompensa_usd == null ? " potential" : ""}</span>
-                      </p>
-                    )}
-                  </div>
+                  )}
+                  {barra && (
+                    <BarraPago
+                      total={info.dias_hasta_pago}
+                      restantes={r.elegible_desde ? diasHasta(r.elegible_desde) : 0}
+                      estado={r.estado}
+                    />
+                  )}
                 </div>
-                <div className="mt-5 max-w-3xl">
-                  <Seguimiento estado={r.estado} diasHastaPago={info.dias_hasta_pago} />
+                <div>
+                  <div className="max-w-3xl">
+                    <Seguimiento estado={r.estado} diasHastaPago={info.dias_hasta_pago} />
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-600">{proximoPaso(r, info.dias_hasta_pago)}</p>
                 </div>
-                <p className="mt-3 text-sm text-zinc-600">{proximoPaso(r, info.dias_hasta_pago)}</p>
               </li>
             );
           })}

@@ -3,7 +3,7 @@
 **Objetivo.** Pasar de ~500 a ~1.000 ingresos de candidatos por mes **sin bajar la calidad**. El programa aporta volumen (cualquiera puede referir) y cuida la calidad pagando solo por contrataciones que duran. Un referido cuenta como ingreso cuando el candidato confirma que quiere participar: recién ahí entra a la base. Se mide contra el embudo actual: hoy el 60 % de los ingresos pasa el screening y el 9 % se coloca. Si los referidos superan esas tasas, el programa trae más calidad que el canal actual. Indicadores: referidos por mes, % que confirma, % que pasa el screening, colocaciones y costo por colocación, abiertos por tipo de referente.
 
 ## Quién puede referir
-Cualquier persona que se registra y entra con un link a su mail (magic link). Hay dos grupos:
+Cualquier persona que se registra (nombre, mail y relación con WorldTeams) y entra con un link a su mail (magic link). Hay dos grupos:
 - **Gente de WorldTeams** (equipo interno y profesionales colocados en clientes): incentivo mayor, porque ya conocen qué se busca y ponen su reputación en juego. Se reconocen **por el mail corporativo**, no porque lo declaren.
 - **Externos**: el resto. Dan el volumen.
 - **Recruiting no participa**: evalúa candidatos, así que habría conflicto de interés.
@@ -28,7 +28,7 @@ Cualquier persona que se registra y entra con un link a su mail (magic link). Ha
 ## Reglas para evitar abusos
 1. **Ventana de 6 meses:** el primero que refiere a un candidato tiene la atribución durante 6 meses, y la contratación tiene que ocurrir dentro de esa ventana.
 2. **Sin duplicados:** si el candidato ya estuvo en contacto con WorldTeams en los últimos 6 meses, el referido no cuenta.
-3. **Sin autorreferencias:** el mail, el teléfono y el LinkedIn del candidato no pueden ser los del referente.
+3. **Sin autorreferencias:** el mail del candidato no puede ser el del referente. La base también compara teléfono y LinkedIn cuando el referente los tiene cargados.
 4. **Consentimiento:** si el candidato rechaza participar o no responde en 14 días, el referido se cierra y se borra su CV.
 5. **Tope de 10 cargas por mes** por referente, contando también las rechazadas.
 6. **No se da información de terceros:** ante un duplicado, el referente solo ve "esta persona ya estaba en contacto con WorldTeams".
