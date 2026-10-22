@@ -83,15 +83,15 @@ Tablas de soporte, fuera del diagrama: `config` (los números del negocio), `sta
 ## Estados de un referido
 
 ```mermaid
-stateDiagram-v2
-    [*] --> pendiente_consentimiento: el referente lo carga
-    pendiente_consentimiento --> en_proceso: el candidato confirma
-    pendiente_consentimiento --> no_confirmado: rechaza o pasan 14 días
-    en_proceso --> contratado: recruiting lo marca
-    en_proceso --> descartado: no avanza
-    contratado --> elegible_pago: 90 días activo
-    contratado --> anulado: se fue antes
-    elegible_pago --> pagado: admin registra el pago
+flowchart TD
+    I(("alta")) -->|el referente lo carga| P["pendiente_consentimiento"]
+    P -->|el candidato confirma| E["en_proceso"]
+    P -->|rechaza o pasan 14 días| NC["no_confirmado"]
+    E -->|recruiting lo marca| C["contratado"]
+    E -->|no avanza| D["descartado"]
+    C -->|90 días activo| EP["elegible_pago"]
+    C -->|se fue antes de los 90 días| AN["anulado"]
+    EP -->|admin registra el pago| PG["pagado"]
 ```
 
 ## Decisiones del modelo

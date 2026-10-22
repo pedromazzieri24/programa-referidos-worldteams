@@ -7,7 +7,7 @@
 ## Diagrama general
 
 ```mermaid
-flowchart LR
+flowchart TD
     L["Landing<br/>(referente y candidato)"] -->|RPC| DB[("Postgres<br/>reglas")]
     R["Recruiting / admin<br/>(hoy SQL; mañana el CRM)"] -->|marcar_contratado<br/>marcar_pagada| DB
     DB -->|encola| T[["tabla tareas"]]
@@ -19,11 +19,9 @@ flowchart LR
     end
 
     T -->|tomar_tareas| P
-    RD -->|revision_diaria| DB
-    P -->|mails| M["Gmail (SMTP)"]
-    P -->|CV| G["Gemini<br/>puntaje 1–10"]
-    P -->|borrar CV| S["Storage"]
     P -->|completar_tarea| DB
+    RD -->|revision_diaria| DB
+    P --> SV["Gmail (SMTP): mails<br/>Gemini: puntaje del CV<br/>Storage: borrar el CV"]
     P -. falla .-> E
     RD -. falla .-> E
     E --> ER[("tabla errores")]
