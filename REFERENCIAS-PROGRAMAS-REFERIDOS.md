@@ -65,7 +65,26 @@ Solo programas para **referir talento** (candidatos), que es el caso de WorldTea
 
 ---
 
-## 5. Fuentes
+## 5. El programa que WorldTeams ya tiene (inspiración para el front)
+
+Consultado el 20/10/2026 en worldteams.com/referral-program. **Es otro programa:** sirve para referir **clientes** (empresas), no talento.
+
+| Aspecto | Programa actual de WorldTeams (clientes) | Programa propuesto (talento) |
+|---|---|---|
+| Qué se refiere | Una empresa que contrata servicios | Un profesional para una búsqueda abierta |
+| Quién puede referir | Solo clientes actuales | Cualquiera registrado; más premio para gente de WorldTeams |
+| Premio | USD 500 de crédito en la factura | USD 200 a 1.000 en dinero según seniority (supuesto) |
+| Cuándo se paga | Cuando el referido usa 40 horas, en la factura del mes siguiente | A los 90 días de una contratación efectiva |
+| Tope | Sin límite | 10 cargas por mes |
+| Cómo se refiere | Formulario de HubSpot | Landing con registro, formulario y panel de seguimiento |
+
+**Qué se tomó como inspiración para el front:** paleta (verde `#142D2B` y lima `#D0EF76`), tipografías (Space Grotesk y Manrope), botones píldora, el número destacado en lima ("1-2-500USD"), los pasos numerados y la tabla de lo que se puede ganar ("Average Loyalty Rewards").
+
+**Qué se agregó que su programa no tiene:** calculadora interactiva, atajo "refer for this role" en cada búsqueda y un panel donde el referente sigue cada referido hasta el pago. Hoy, después de mandar el formulario de HubSpot, el referente no ve nada más.
+
+> Los cambios respecto de su programa actual quedan para discutir con WorldTeams (ver "Para discutir con WorldTeams" en `CONTEXTO-PROYECTO.md`).
+
+## 6. Fuentes
 
 - BairesDev, Talent Referral Program: https://www.bairesdev.com/referrals-program/
 - Devlane, Candidate Referral Program: https://devlane.com/candidate-referral-program
@@ -77,4 +96,5 @@ Solo programas para **referir talento** (candidatos), que es el caso de WorldTea
 - TechCrunch, Draftboard: https://techcrunch.com/2024/04/15/draftboard-lets-companies-list-referral-bonuses-for-anyone
 - ThirstySprout, Referral Program: https://www.thirstysprout.com/referral-program
 - X-Team, Referral Program: https://x-team.com/blog/referral-program/
+- WorldTeams, Referral Program (clientes): https://worldteams.com/referral-program/
 - iCIMS, retención de referidos: https://www.icims.com/blog/how-employee-referrals-impact-retention/
