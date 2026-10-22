@@ -75,6 +75,13 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 | **N8N-06** | Alerta de error | Una tarea agotó sus 3 intentos (Gmail no respondió) y, después, n8n no pudo conectarse a Supabase | Registro en la tabla `errores` y alerta por Telegram | ✅ Después de corregir el formato de la alerta (ver hallazgos) |
 | **N8N-07** | Una sola alerta por problema | Mandar la misma falla crítica al webhook de errores, dos veces juntas y una tercera después | La tercera se registra pero no alerta | ✅ Las dos simultáneas alertaron las dos (n8n guarda la memoria del workflow al terminar); la tercera, solo registro. En un corte las fallas llegan de a una por minuto |
 
+### Mejoras de la landing (22/10, rama `mejoras-front`)
+
+| # | Caso | Qué se hizo | Resultado esperado | Obtenido |
+|---|---|---|---|---|
+| **E2E-12** | Registro corto | Registrarse en `/signup` con un alias nuevo (`+corto`), eligiendo la relación con las tarjetas, y entrar con el link | Solo pide nombre, mail y relación. La tarjeta elegida se sombrea y el aviso del mail corporativo aparece solo con las opciones de WorldTeams. El referente queda creado con su tipo según el dominio, como antes, y con país, teléfono y área vacíos | Pantalla ✅ (escritorio y celular, también con teclado). Alta: pendiente |
+| **E2E-13** | Barra hacia el pago | Ver en el panel un referido contratado, uno a mitad de camino (`elegible_desde` adelantado), uno aprobado y uno pagado | La barra aparece recién desde la contratación, con el monto, los días que faltan, la fecha de pago y una frase según el avance. Antes de la contratación queda solo la línea de pasos | Todos los estados ✅ en local, con datos de ejemplo. En el panel real: pendiente |
+
 ---
 
 ## 3. Hallazgos de la prueba y qué se decidió
