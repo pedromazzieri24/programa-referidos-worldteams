@@ -445,7 +445,7 @@ begin
       returning * into v_cand;
     else
       -- Estuvo hace más de 6 meses: se actualizan sus datos con los nuevos, salvo el mail.
-      -- Riesgo conocido (contexto §4, antiabuso 9): si volvió con otro mail, el consentimiento va al viejo.
+      -- Riesgo conocido (nota de decisiones): si volvió con otro mail, el consentimiento va al viejo.
       update candidatos
       set nombre = trim(p_nombre), linkedin_url = coalesce(p_linkedin_url, linkedin_url),
           linkedin_norm = coalesce(v_linkedin, linkedin_norm), telefono = coalesce(p_telefono, telefono),

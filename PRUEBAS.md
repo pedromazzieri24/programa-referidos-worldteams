@@ -81,12 +81,12 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 
 | Hallazgo | Caso | Decisión | Dónde quedó |
 |---|---|---|---|
-| Al abrir el magic link quedan dos pestañas (lo decide el cliente de correo) | E2E-01 | Aviso "You can close the other tab". El código de 6 dígitos queda para la segunda etapa | `AvisoIngreso.tsx`, contexto §7 |
+| Al abrir el magic link quedan dos pestañas (lo decide el cliente de correo) | E2E-01 | Aviso "You can close the other tab". El código de 6 dígitos queda para la segunda etapa | `AvisoIngreso.tsx`, nota de decisiones (qué quedó afuera) |
 | El contador de cupo no bajaba con los rechazos | E2E-05/06 | Se refresca la página también ante un rechazo | `refer/acciones.ts` |
 | El formulario se vaciaba después de un error (comportamiento de React 19) | E2E-05/06 | Los formularios se envían sin vaciarse (también registro y login) | `enviarSinVaciar.ts` |
-| La misma persona con otro mail pasa como nueva si no se carga el LinkedIn | E2E-07 | Riesgo conocido, documentado. Segunda etapa: normalizar alias. A discutir: LinkedIn obligatorio | Contexto §4 (antiabuso, regla 8) |
-| El mail de consentimiento queda en la cola aunque el candidato ya haya confirmado | E2E-03 | n8n chequea el estado del referido antes de cada tarea | Contexto §8 (lo que necesita n8n) |
-| Si se verifica a la referente después de la contratación, el panel sigue mostrando la tarifa externa hasta el día 90 | E2E-09 | En la demo, verificar a Lucía **antes** de contratar a Martín | Contexto §4 (quién puede referir) |
+| La misma persona con otro mail pasa como nueva si no se carga el LinkedIn | E2E-07 | Riesgo conocido, documentado. Segunda etapa: normalizar alias. A discutir: LinkedIn obligatorio | Nota de decisiones (riesgos conocidos) |
+| El mail de consentimiento queda en la cola aunque el candidato ya haya confirmado | E2E-03 | n8n chequea el estado del referido antes de cada tarea | `n8n/js/preparar.js` |
+| Si se verifica a la referente después de la contratación, el panel sigue mostrando la tarifa externa hasta el día 90 | E2E-09 | En la demo, verificar a Lucía **antes** de contratar a Martín | Guion de la demo |
 | `tests.sql` tomaba también las tareas reales de la cola (`tomar_tareas()` toma todas las pendientes) y las dejaba "en curso". Por eso una tarea real llegó a su tercer intento en minutos | N8N-06 | El test guarda cómo estaba la cola y, al final, devuelve las tareas reales a su estado | `supabase/tests.sql` |
 | Telegram rechazaba la alerta: el modo Markdown no acepta un `_` suelto, como el de "aviso_contratacion" | N8N-06 | La alerta va en modo HTML, con los caracteres especiales escapados | `n8n/build_errores.py` |
 | Pegar el JSON en n8n no trae la configuración del workflow: quedaron sin workflow de errores y sin zona horaria | N8N-06 | Paso agregado a la puesta en marcha: configurarlos a mano en *Settings* | `n8n/README.md` |

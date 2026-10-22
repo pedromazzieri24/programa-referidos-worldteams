@@ -2,7 +2,6 @@
 
 > Benchmarks para fundamentar el diseño del programa de WorldTeams.
 > Fuentes consultadas el 20/10/2026. Los montos y condiciones pueden cambiar; citarlos como "a la fecha de consulta".
-> **Para Claude Code:** esto es material de referencia, no decisiones. Si algo de acá inspira un cambio de negocio, se propone primero (sección 0.1 de `CONTEXTO-PROYECTO.md`).
 
 ---
 
@@ -82,7 +81,7 @@ Consultado el 20/10/2026 en worldteams.com/referral-program. **Es otro programa:
 
 **Qué se agregó que su programa no tiene:** calculadora interactiva, atajo "refer for this role" en cada búsqueda y un panel donde el referente sigue cada referido hasta el pago. Hoy, después de mandar el formulario de HubSpot, el referente no ve nada más.
 
-> Los cambios respecto de su programa actual quedan para discutir con WorldTeams (ver "Para discutir con WorldTeams" en `CONTEXTO-PROYECTO.md`).
+> Los cambios respecto de su programa actual quedan para discutir con WorldTeams (ver "Para validar con WorldTeams" en `entregables/05-nota-decisiones.md`).
 
 ## 6. Fuentes
 
