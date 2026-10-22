@@ -4,7 +4,7 @@ El sistema se prueba en dos niveles, que se complementan:
 
 | Nivel | Qué prueba | Cómo se corre | Estado |
 |---|---|---|---|
-| **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 41 casos: 37 en verde en Supabase (22/10); con la migración 004, los 41 en verde en un Postgres local |
+| **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 41 casos en verde en Supabase (22/10, con la migración 004) |
 | **2. Prueba de punta a punta** (manual) | Que todo funcione junto, como lo usaría una persona: la landing, el login por mail, el CV, la base y el panel | A mano, en la landing local, con los personajes de la demo. Se verifica en pantalla y con consultas SQL | 10 casos en verde (21/10) |
 | **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 7 casos en verde (22/10) |
 | **2c. Mejoras de la landing** (manual) | El registro corto y la línea de meta hacia el pago | En la landing local, con una cuenta nueva y el panel de una referente con un contratado | 2 casos en verde (22/10) |
