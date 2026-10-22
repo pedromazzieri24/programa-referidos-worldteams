@@ -2,8 +2,9 @@
 // Correr desde n8n/:  node test_js.js
 const fs = require('fs');
 const cargar = (...archivos) => archivos.map((a) => fs.readFileSync(`${__dirname}/js/${a}`, 'utf8')).join('\n');
-const { preparar, validarPuntaje, avisoRecruiting } = new Function(
-  cargar('mails.js', 'preparar.js', 'validar_puntaje.js') + '\nreturn { preparar, validarPuntaje, avisoRecruiting };')();
+const { preparar, validarPuntaje, avisoRecruiting, filtrarRepetidas } = new Function(
+  cargar('mails.js', 'preparar.js', 'validar_puntaje.js', 'alertas.js')
+  + '\nreturn { preparar, validarPuntaje, avisoRecruiting, filtrarRepetidas };')();
 
 const cfg = { landing_url: 'https://landing.test', mail_recruiting: 'recruiting@test.invalid', mail_admin: 'admin@test.invalid' };
 const datos = {
@@ -62,6 +63,15 @@ caso('aviso a recruiting con puntaje', r.to === cfg.mail_recruiting && r.subject
   && r.html.includes("marcar_contratado('ref-1')"));
 r = avisoRecruiting(t, validarPuntaje('nada'), cfg);
 caso('aviso a recruiting sin puntaje si la IA falló', r.subject.includes('review manually') && r.html.includes('review the CV manually'));
+
+// Una sola alerta por problema (workflow de errores)
+const corte = { workflow: 'Procesador', nodo: 'Tomar tareas', mensaje: 'connection refused', texto_alerta: 'ALERTA' };
+const avisadas = {};
+const min = 60 * 1000;
+caso('primera falla de un corte → alerta', filtrarRepetidas([corte], avisadas, 0).length === 1);
+caso('la misma falla un minuto después → no se repite', filtrarRepetidas([corte], avisadas, 1 * min).length === 0);
+caso('otra falla durante el corte → alerta', filtrarRepetidas([{ ...corte, mensaje: 'Tarea 9 (intento 3 de 3)' }], avisadas, 2 * min).length === 1);
+caso('la misma falla pasados 30 minutos → recordatorio', filtrarRepetidas([corte], avisadas, 31 * min).length === 1);
 
 console.log(fallas ? `\n${fallas} casos fallaron` : '\nTodos los casos ok');
 process.exit(fallas ? 1 : 0);

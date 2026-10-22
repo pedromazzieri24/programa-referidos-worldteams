@@ -6,7 +6,7 @@ El sistema se prueba en dos niveles, que se complementan:
 |---|---|---|---|
 | **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 37 casos en verde (22/10) |
 | **2. Prueba de punta a punta** (manual) | Que todo funcione junto, como lo usaría una persona: la landing, el login por mail, el CV, la base y el panel | A mano, en la landing local, con los personajes de la demo. Se verifica en pantalla y con consultas SQL | 10 casos en verde (21/10) |
-| **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 6 casos en verde (22/10) |
+| **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 7 casos en verde (22/10) |
 
 **Por qué los dos:** los tests de reglas comprueban que la base decide bien, pero no pasan por la pantalla. La prueba de punta a punta encontró cosas que los tests no podían ver: un contador desactualizado, un formulario que se vaciaba y una tarea que quedaba en la cola sin sentido (ver "Hallazgos").
 
@@ -73,6 +73,7 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 | **N8N-04** | Revisión diaria | Adelantar `elegible_desde` a hoy y ejecutar a mano el workflow de revisión | Recompensa aprobada: panel "Reward approved" y Earned USD 400; mail al referente y pedido de pago a administración con el comando `marcar_pagada` | ✅ |
 | **N8N-05** | Corte a mitad de camino (no planificado) | Se cortó la conexión con Supabase justo después de mandar los mails y antes de cerrar las tareas | Las tareas quedan "en curso" y se retoman a los 10 minutos | ✅ Se retomaron solas. El mail salió dos veces, como estaba documentado |
 | **N8N-06** | Alerta de error | Una tarea agotó sus 3 intentos (Gmail no respondió) y, después, n8n no pudo conectarse a Supabase | Registro en la tabla `errores` y alerta por Telegram | ✅ Después de corregir el formato de la alerta (ver hallazgos) |
+| **N8N-07** | Una sola alerta por problema | Mandar la misma falla crítica al webhook de errores, dos veces juntas y una tercera después | La tercera se registra pero no alerta | ✅ Las dos simultáneas alertaron las dos (n8n guarda la memoria del workflow al terminar); la tercera, solo registro. En un corte las fallas llegan de a una por minuto |
 
 ---
 

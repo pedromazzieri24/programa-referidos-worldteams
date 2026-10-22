@@ -7,11 +7,11 @@ Dos entradas, un solo lugar donde se registra y se alerta:
   - Webhook POST /webhook/registrar-error-referidos: fallas que el procesador de tareas atrapa y sigue
     (una tarea que falló, un puntaje inválido).
 Registro: tabla `errores` en Supabase (sin datos personales). Alerta: Telegram, solo si la gravedad es 'critico'
-(por ejemplo, una tarea que agotó sus 3 intentos).
+(por ejemplo, una tarea que agotó sus 3 intentos), y una sola vez cada 30 minutos por la misma falla (js/alertas.js).
 Correr desde n8n/:  python3 build_errores.py
 """
 import uuid
-from comun import NOMBRE_ERRORES, conectar, credencial, guardar, node, si
+from comun import NOMBRE_ERRORES, conectar, credencial, guardar, js, node, si
 
 SUPA = credencial("supabaseApi", "Supabase account MVP")
 TELEGRAM = credencial("telegramApi", "Telegram account")
@@ -55,6 +55,11 @@ return { json: alerta({
 """
 
 
+CODE_REPETIDAS = js("alertas.js") + """
+// Los datos estáticos del workflow persisten entre ejecuciones de producción (no en las manuales).
+const avisadas = $getWorkflowStaticData('global');
+return filtrarRepetidas($input.all().map(i => i.json), avisadas, Date.now()).map(json => ({ json }));
+"""
 
 nodes = [
     node("Error Trigger", "n8n-nodes-base.errorTrigger", 1, [0, -120], {}),
@@ -76,7 +81,8 @@ nodes = [
          credentials=SUPA, onError="continueRegularOutput"),
     si("¿Es crítico?", [540, 120], "={{ $json.gravedad === 'critico' }}"),
     # chatId: completarlo en n8n (no va al repo). La credencial de Telegram también vive solo en n8n.
-    node("Alertar (Telegram)", "n8n-nodes-base.telegram", 1.2, [800, 100], {
+    node("¿Ya se avisó?", "n8n-nodes-base.code", 2, [800, 100], {"jsCode": CODE_REPETIDAS}),
+    node("Alertar (Telegram)", "n8n-nodes-base.telegram", 1.2, [1040, 100], {
         "resource": "message", "operation": "sendMessage",
         "chatId": "REEMPLAZAR_CHAT_ID",
         "text": "={{ $json.texto_alerta }}",
@@ -87,7 +93,7 @@ nodes = [
 connections = conectar(
     ("Error Trigger", "Normalizar"), ("Webhook de reportes", "Normalizar"),
     ("Normalizar", "Registrar error"), ("Normalizar", "¿Es crítico?"),
-    ("¿Es crítico?", "Alertar (Telegram)", 0),
+    ("¿Es crítico?", "¿Ya se avisó?", 0), ("¿Ya se avisó?", "Alertar (Telegram)"),
 )
 
 guardar("workflow-errores.json", NOMBRE_ERRORES, nodes, connections)

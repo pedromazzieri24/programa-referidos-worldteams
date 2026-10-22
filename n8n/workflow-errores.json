@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "cc2a3afc-bb65-444e-af22-023c16d4c4b4",
+      "id": "be4046ef-95db-4121-9a92-000c29a9f496",
       "name": "Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -19,7 +19,7 @@
         "responseMode": "onReceived",
         "options": {}
       },
-      "id": "656f5d62-c123-40f9-8ff6-6098838b89b0",
+      "id": "a7d13406-051b-4fef-aa97-7e071ea7c2c5",
       "name": "Webhook de reportes",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -27,14 +27,14 @@
         0,
         120
       ],
-      "webhookId": "0cb7e14f-d2be-4928-9d84-1a35c0aafc33"
+      "webhookId": "755abef5-2fd1-4a8f-93e1-8d204bee53e6"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
         "jsCode": "// Unifica las dos entradas en una misma forma. No guarda datos personales: solo qué falló y dónde\n// (si un mensaje de error trae un mail, se tapa).\nconst corto = (v, n = 300) => String(v ?? '').replace(/[^\\s@<>\"'()]+@[^\\s@<>\"'()]+/g, '[email]').slice(0, n);\n\n// Texto de la alerta para Telegram (modo HTML: se escapan <, > y &; con Markdown, un \"_\" como el de\n// \"aviso_contratacion\" hacía que Telegram rechazara el mensaje).\nconst html = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst alerta = r => ({ ...r, texto_alerta: `ALERTA (referidos): ${html(r.workflow)} falló en \"${html(r.nodo)}\"\\n`\n  + `${html(r.mensaje)}\\n\\nEjecución: ${html(r.execution_url ?? 'sin link')}` });\n\n// Entrada 1: Error Trigger -> { execution: { id, url, error, lastNodeExecuted }, workflow: { id, name } }\nif ($json.execution) {\n  const e = $json.execution;\n  return { json: alerta({\n    gravedad: 'critico',\n    workflow: corto($json.workflow?.name, 100),\n    nodo: corto(e.lastNodeExecuted, 100),\n    mensaje: corto(e.error?.message ?? 'Error sin mensaje'),\n    execution_id: corto(e.id, 50),\n    execution_url: e.url ?? null,\n  }) };\n}\n\n// Entrada 2: webhook de reportes -> el cuerpo viene en $json.body\nconst b = $json.body ?? {};\nconst url = b.workflow_id && b.execution_id\n  ? `http://localhost:5678/workflow/${b.workflow_id}/executions/${b.execution_id}`\n  : null;\nreturn { json: alerta({\n  gravedad: b.gravedad === 'aviso' ? 'aviso' : 'critico',\n  workflow: corto(b.workflow, 100),\n  nodo: corto(b.nodo, 100),\n  mensaje: corto(b.mensaje || 'Sin mensaje'),\n  execution_id: corto(b.execution_id, 50),\n  execution_url: url,\n}) };\n"
       },
-      "id": "ad75db07-c086-4ade-a30d-4c8f9a8c1e34",
+      "id": "eb5864c1-7400-4c65-9f50-880706566157",
       "name": "Normalizar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -75,7 +75,7 @@
           ]
         }
       },
-      "id": "d07571c8-a6eb-470b-b1ad-2fe86289b240",
+      "id": "3f5ae03e-7ff8-4009-a52c-f1a0d22ec094",
       "name": "Registrar error",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
@@ -102,7 +102,7 @@
           },
           "conditions": [
             {
-              "id": "4d8646ad-2380-4cdf-acd8-e33dfafe8bcb",
+              "id": "d6315c3e-7650-4320-a613-e339540701cc",
               "leftValue": "={{ $json.gravedad === 'critico' }}",
               "rightValue": "",
               "operator": {
@@ -116,13 +116,26 @@
         },
         "options": {}
       },
-      "id": "da9ffb45-4446-47a7-abf3-78f94220a659",
+      "id": "77af81f5-562e-4a9c-8ae2-fac8a23fb594",
       "name": "¿Es crítico?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
         540,
         120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Una sola alerta por problema: durante un corte de conexión, el procesador falla cada minuto con el mismo error.\n// Si la misma falla (workflow, nodo y mensaje) ya se avisó dentro de la ventana, no se repite. El registro en la\n// tabla `errores` sigue siendo uno por falla. Dos tareas distintas avisan cada una: su mensaje trae el número.\n// avisadas = { clave: momento del último aviso (ms) }; en n8n son los datos estáticos del workflow.\n// n8n los guarda al terminar cada ejecución: dos fallas idénticas en el mismo instante avisan las dos (probado\n// el 22/10). En un corte no pasa, porque el procesador falla una vez por minuto.\nconst VENTANA_ALERTA_MIN = 30;\n\nfunction filtrarRepetidas(alertas, avisadas, ahora) {\n  const ventana = VENTANA_ALERTA_MIN * 60 * 1000;\n  const salen = [];\n  for (const a of alertas) {\n    const clave = `${a.workflow}|${a.nodo}|${a.mensaje}`;\n    if (avisadas[clave] !== undefined && ahora - avisadas[clave] < ventana) continue;\n    avisadas[clave] = ahora;\n    salen.push({ ...a, texto_alerta: `${a.texto_alerta}\\n\\n(Si se repite, no vuelvo a avisar por ${VENTANA_ALERTA_MIN} minutos.)` });\n  }\n  // Se olvidan las claves vencidas para que los datos guardados no crezcan.\n  for (const [clave, momento] of Object.entries(avisadas)) {\n    if (ahora - momento >= ventana) delete avisadas[clave];\n  }\n  return salen;\n}\n\n// Los datos estáticos del workflow persisten entre ejecuciones de producción (no en las manuales).\nconst avisadas = $getWorkflowStaticData('global');\nreturn filtrarRepetidas($input.all().map(i => i.json), avisadas, Date.now()).map(json => ({ json }));\n"
+      },
+      "id": "4dfc7faf-de96-47e3-ba45-9fc9cce6b4bd",
+      "name": "¿Ya se avisó?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        100
       ]
     },
     {
@@ -136,12 +149,12 @@
           "parse_mode": "HTML"
         }
       },
-      "id": "424fb073-3e25-4d46-8fb4-b678f9312e48",
+      "id": "ecd26509-e2d3-42ea-987a-b92dd9ccdfb3",
       "name": "Alertar (Telegram)",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        800,
+        1040,
         100
       ],
       "credentials": {
@@ -192,6 +205,17 @@
       ]
     },
     "¿Es crítico?": {
+      "main": [
+        [
+          {
+            "node": "¿Ya se avisó?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Ya se avisó?": {
       "main": [
         [
           {
