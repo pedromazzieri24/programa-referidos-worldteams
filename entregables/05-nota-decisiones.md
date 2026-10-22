@@ -59,4 +59,4 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 
 ## Cómo usé la IA
 
-Trabajé con Claude Code en todo el proceso, con una regla fija: la IA propone cada cambio con su porqué y sus alternativas, y ninguna decisión de negocio entra sin mi OK. Todo lo que propuso lo probé: 37 tests de reglas, 25 del código de la automatización y 17 casos de punta a punta (`PRUEBAS.md`). Cada iteración, con lo que acepté y lo que corregí, está en [`BITACORA-IA.md`](../BITACORA-IA.md).
+Trabajé con Claude Code en todo el proceso, con una regla fija: la IA propone cada cambio con su porqué y sus alternativas, y ninguna decisión de negocio entra sin mi OK. Todo lo que propuso lo probé: 37 tests de reglas, 25 del código de la automatización y 19 casos de punta a punta (`PRUEBAS.md`). Cada iteración, con lo que acepté y lo que corregí, está en [`BITACORA-IA.md`](../BITACORA-IA.md).
