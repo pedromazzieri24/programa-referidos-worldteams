@@ -161,9 +161,22 @@ create table tareas (
   intentos int not null default 0,
   error text,
   created_at timestamptz not null default now(),
+  tomada_at timestamptz,
   procesada_at timestamptz
 );
-create index tareas_pendientes_idx on tareas (id) where estado in ('pendiente', 'error');
+create index tareas_pendientes_idx on tareas (id) where estado in ('pendiente', 'error', 'en_curso');
+
+-- Registro de las fallas de los workflows de n8n. Sin datos personales: qué falló, dónde y el id de ejecución.
+create table errores (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  gravedad text not null default 'critico' check (gravedad in ('critico', 'aviso')),
+  workflow text,
+  nodo text,
+  mensaje text,
+  execution_id text,
+  execution_url text
+);
 
 -- ============================================================
 -- 3. Funciones auxiliares
@@ -432,7 +445,7 @@ begin
       returning * into v_cand;
     else
       -- Estuvo hace más de 6 meses: se actualizan sus datos con los nuevos, salvo el mail.
-      -- Riesgo conocido (contexto §4, antiabuso 9): si volvió con otro mail, el consentimiento va al viejo.
+      -- Riesgo conocido (nota de decisiones): si volvió con otro mail, el consentimiento va al viejo.
       update candidatos
       set nombre = trim(p_nombre), linkedin_url = coalesce(p_linkedin_url, linkedin_url),
           linkedin_norm = coalesce(v_linkedin, linkedin_norm), telefono = coalesce(p_telefono, telefono),
@@ -711,9 +724,10 @@ end;
 $$;
 
 -- n8n toma hasta p_limite tareas y las marca "en_curso". "skip locked" evita que dos ejecuciones tomen la misma.
--- Reintenta las que fallaron hasta 3 veces. Devuelve todo lo que n8n necesita para mandar cada mail.
+-- Reintenta las que fallaron y las que quedaron colgadas más de 10 minutos, hasta 3 intentos en total.
+-- Devuelve todo lo que n8n necesita para mandar cada mail.
 create function tomar_tareas(p_limite int default 10)
-returns table (id bigint, tipo text, referido_id uuid, payload jsonb, datos jsonb)
+returns table (id bigint, tipo text, referido_id uuid, intento int, payload jsonb, datos jsonb)
 language plpgsql security definer
 set search_path = public
 as $$
@@ -721,20 +735,23 @@ begin
   return query
   with tomadas as (
     update tareas t
-    set estado = 'en_curso', intentos = t.intentos + 1
+    set estado = 'en_curso', intentos = t.intentos + 1, tomada_at = now()
     where t.id in (
       select t2.id from tareas t2
-      where t2.estado = 'pendiente' or (t2.estado = 'error' and t2.intentos < 3)
+      where t2.estado = 'pendiente'
+         or (t2.estado = 'error' and t2.intentos < 3)
+         or (t2.estado = 'en_curso' and t2.tomada_at < now() - interval '10 minutes' and t2.intentos < 3)
       order by t2.id
       limit p_limite
       for update skip locked)
     returning t.*
   )
-  select tm.id, tm.tipo, tm.referido_id, tm.payload,
+  select tm.id, tm.tipo, tm.referido_id, tm.intentos, tm.payload,
          jsonb_build_object(
            'token', r.token_consentimiento,
            'estado', r.estado,
            'motivo', r.motivo_rechazo,
+           'vence_at', r.consentimiento_vence_at,
            'candidato_nombre', c.nombre,
            'candidato_email', c.email,
            'cv_path', c.cv_path,
@@ -744,7 +761,9 @@ begin
            'busqueda_especialidad', b.especialidad,
            'busqueda_seniority', b.seniority,
            'busqueda_descripcion', b.descripcion,
+           'recompensa_id', rc.id,
            'recompensa_usd', rc.monto_usd,
+           'recompensa_elegible_desde', rc.elegible_desde,
            'recompensa_motivo', rc.motivo_anulacion)
   from tomadas tm
   left join referidos r on r.id = tm.referido_id
@@ -791,6 +810,7 @@ alter table intentos_referido enable row level security;
 alter table eventos_referido enable row level security;
 alter table recompensas enable row level security;
 alter table tareas enable row level security;
+alter table errores enable row level security;
 
 -- Públicas: la landing muestra las búsquedas abiertas y la tabla de montos.
 create policy "busquedas abiertas visibles" on busquedas for select to anon, authenticated using (estado = 'abierta');
@@ -799,7 +819,7 @@ create policy "montos visibles" on montos_incentivo for select to anon, authenti
 create policy "ver mi perfil" on referentes for select to authenticated using (auth_user_id = auth.uid());
 create policy "ver mis recompensas" on recompensas for select to authenticated
   using (referente_id in (select id from referentes where auth_user_id = auth.uid()));
--- config, staff_recruiting, candidatos, referidos, intentos_referido, eventos_referido y tareas: sin policies.
+-- config, staff_recruiting, candidatos, referidos, intentos_referido, eventos_referido, tareas y errores: sin policies.
 
 -- Las funciones nuevas se pueden ejecutar por defecto desde cualquier rol: se cierra todo y se abre lo necesario.
 revoke execute on all functions in schema public from public, anon, authenticated;

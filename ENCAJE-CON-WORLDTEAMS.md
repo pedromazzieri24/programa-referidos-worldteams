@@ -78,10 +78,3 @@ Es el mismo stack que ya usa el equipo (Supabase + n8n): no suma tecnologías nu
 5. **Supabase → administración:** las recompensas aprobadas van a donde paguen hoy (otro sistema o la planilla que usen).
 
 Antes de construirlas hay que saber qué ATS y CRM usan y si tienen API o webhooks.
-
-## 8. Para defenderlo en la presentación
-
-- *"No quise reemplazar su ATS ni su CRM. El programa necesita datos que esas herramientas no tienen: quién refirió a quién, el consentimiento, la exclusividad y las recompensas. Eso vive en Supabase, y n8n lo conecta con lo que ya usan."*
-- *"Sé que pierdo usabilidad: hoy alguien tiene que marcar la contratación en una tabla. Lo acepté para el MVP porque son pocas personas y queda auditado, y la segunda etapa lo resuelve conectando el CRM."*
-- *"La primera integración sería el ATS, porque sin ella la regla de duplicados no ve a quienes se postularon directo."*
-- *"Vi que usan planillas entre el ATS y el CRM. Es el tipo de trabajo manual que se automatiza con n8n, y el programa de referidos sería la primera pieza conectada."*

@@ -10,7 +10,7 @@ with funciones_esperadas(nombre) as (values
 ),
 chequeos(orden, area, chequeo, esperado, obtenido) as (
   -- Estructura
-  select 1, 'Estructura', 'Tablas del programa', '11',
+  select 1, 'Estructura', 'Tablas del programa (11 + errores)', '12',
     (select count(*)::text from pg_tables where schemaname = 'public')
   union all select 2, 'Estructura', 'Funciones que faltan', '(ninguna)',
     coalesce((select string_agg(nombre, ', ') from funciones_esperadas f

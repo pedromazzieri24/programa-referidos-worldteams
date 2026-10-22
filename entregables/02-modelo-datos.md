@@ -78,7 +78,7 @@ erDiagram
     }
 ```
 
-Tablas de soporte, fuera del diagrama: `config` (los números del negocio) y `staff_recruiting` (quién no puede referir).
+Tablas de soporte, fuera del diagrama: `config` (los números del negocio), `staff_recruiting` (quién no puede referir) y `errores` (las fallas de n8n, sin datos personales).
 
 ## Estados de un referido
 
@@ -112,7 +112,7 @@ stateDiagram-v2
 
 - **Públicas:** búsquedas abiertas y tabla de montos (las muestra la landing).
 - **Del dueño:** cada referente ve solo su perfil y sus recompensas. Sus referidos los ve por `mis_referidos()`, que no devuelve el puntaje de IA ni los datos de contacto del candidato.
-- **Sin acceso con la clave pública:** candidatos, referidos, intentos, historial, tareas, configuración y lista de recruiting.
+- **Sin acceso con la clave pública:** candidatos, referidos, intentos, historial, tareas, errores, configuración y lista de recruiting.
 - **CV:** bucket privado; cada referente sube solo a su carpeta y n8n los lee con la clave secreta.
 - Las funciones internas (cola de tareas, revisión diaria, contratación, pago) solo las ejecuta n8n o un admin.
 
@@ -130,4 +130,4 @@ Las funciones devuelven **códigos** y no textos: el idioma lo pone la landing.
 
 ## Cómo se prueba
 
-`supabase/tests.sql` crea usuarios de prueba, ejercita 36 casos (registro, autorreferido, duplicados, tope, recruiting, consentimiento, recompensas, baja, ventana, panel y cola de tareas), borra lo que creó y muestra el resultado de cada caso. `supabase/chequeo.sql` verifica estructura, permisos y datos iniciales sin modificar nada. Los cambios sobre una base ya creada están en `supabase/migraciones/`.
+`supabase/tests.sql` crea usuarios de prueba, ejercita 37 casos (registro, autorreferido, duplicados, tope, recruiting, consentimiento, recompensas, baja, ventana, panel y cola de tareas), borra lo que creó y muestra el resultado de cada caso. `supabase/chequeo.sql` verifica estructura, permisos y datos iniciales sin modificar nada. Los cambios sobre una base ya creada están en `supabase/migraciones/`.
