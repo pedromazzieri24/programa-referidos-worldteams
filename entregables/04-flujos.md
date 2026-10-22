@@ -93,7 +93,7 @@ flowchart LR
 
 ## Cómo se probó
 
-De punta a punta, en la landing publicada y con n8n corriendo: referir, aceptar, puntuar, contratar y aprobar la recompensa, más un corte de conexión real y una alerta de error (casos N8N-01 a N8N-07 de `PRUEBAS.md`). Las reglas de la base las cubre `supabase/tests.sql` (37 casos).
+De punta a punta, en la landing publicada y con n8n corriendo: referir, aceptar, puntuar, contratar y aprobar la recompensa, más un corte de conexión real y una alerta de error (casos N8N-01 a N8N-07 de `PRUEBAS.md`). Las reglas de la base las cubre `supabase/tests.sql` (41 casos).
 
 ## Segunda etapa
 

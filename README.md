@@ -53,6 +53,6 @@ Las claves secretas (Supabase, Gemini, SMTP, Telegram) viven solo en n8n y en Su
 
 | Qué | Cómo | Casos |
 |---|---|---|
-| Reglas del negocio | `supabase/tests.sql` en el SQL Editor (crea sus datos y los borra) | 37 |
+| Reglas del negocio | `supabase/tests.sql` en el SQL Editor (crea sus datos y los borra) | 41 |
 | Código de los nodos de n8n | `node n8n/test_js.js` | 25 |
 | De punta a punta (landing + base + n8n) | Manual, caso por caso en `PRUEBAS.md` | 19 |

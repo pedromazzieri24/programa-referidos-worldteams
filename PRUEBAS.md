@@ -4,7 +4,7 @@ El sistema se prueba en dos niveles, que se complementan:
 
 | Nivel | Qué prueba | Cómo se corre | Estado |
 |---|---|---|---|
-| **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 37 casos en verde (22/10) |
+| **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 41 casos: 37 en verde en Supabase (22/10); con la migración 004, los 41 en verde en un Postgres local |
 | **2. Prueba de punta a punta** (manual) | Que todo funcione junto, como lo usaría una persona: la landing, el login por mail, el CV, la base y el panel | A mano, en la landing local, con los personajes de la demo. Se verifica en pantalla y con consultas SQL | 10 casos en verde (21/10) |
 | **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 7 casos en verde (22/10) |
 | **2c. Mejoras de la landing** (manual) | El registro corto y la línea de meta hacia el pago | En la landing local, con una cuenta nueva y el panel de una referente con un contratado | 2 casos en verde (22/10) |
@@ -28,6 +28,7 @@ Agrupados por la regla que validan:
 | **CVs** | Nadie puede subir un CV a la carpeta de otro usuario |
 | **Recompensa y 90 días (P3, P5)** | El monto sale de la tabla (senior + WorldTeams + prioritaria = USD 1.000); el pago se habilita a los 90 días; antes no se toca; si se fue antes, se anula; si lo contrataron fuera de la ventana de 6 meses, no hay recompensa; registrar el pago cierra el circuito |
 | **Panel y n8n** | El panel muestra solo los referidos propios; la cola entrega a n8n los datos del mail y no entrega dos veces la misma tarea; cada cambio de estado queda en el historial |
+| **Arreglos de la review externa** (migración 004) | El mes del tope empieza a las 0 h de Florida, no de UTC; contratar a mano a alguien que no confirmó da error y no genera recompensa; si el mail coincide con un candidato y el LinkedIn con otro, es duplicado; volver a referir a alguien encola el borrado de su CV anterior |
 
 ---
 
@@ -100,6 +101,12 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 | Pegar el JSON en n8n no trae la configuración del workflow: quedaron sin workflow de errores y sin zona horaria | N8N-06 | Paso agregado a la puesta en marcha: configurarlos a mano en *Settings* | `n8n/README.md` |
 | Gmail tardó 9 minutos en fallar ("Greeting never received"): una ejecución así se puede cruzar con el reintento de los 10 minutos | N8N-06 | Tope de 5 minutos por ejecución del procesador | `n8n/build_tareas.py` |
 | Con el Wi-Fi de casa, las conexiones a Supabase se cortaban de a ratos (rechazo en ~40 ms, solo a Supabase). Con los datos del celular, 34 ejecuciones seguidas sin error | N8N-05/06 | **A definir para la demo en vivo:** hotspot o una VPN (Cloudflare WARP) | Este archivo |
+| **Review externa (22/10):** dos cargas simultáneas del mismo referente podían pasar el tope (contaba y después insertaba) | Review | Los pedidos de un mismo referente van de a uno (se bloquea su fila). No se puede probar desde el SQL Editor, que usa una sola sesión | `schema.sql` (`crear_referido`), migración 004 |
+| **Review externa:** el mes y el día se calculaban en UTC: el cupo se reiniciaba a las 21 h de Argentina y una contratación cargada de noche corría la fecha de pago | Review | Zona horaria del programa en `config` (Florida, donde opera WorldTeams) | `hoy()` e `inicio_mes()`, migración 004 |
+| **Review externa:** si el mail coincidía con un candidato y el LinkedIn con otro, elegía uno al azar | Review | Se revisan todos los que coinciden: si son dos registros distintos, es duplicado | `crear_referido`, migración 004 |
+| **Review externa:** un cambio de estado a mano generaba la recompensa aunque el candidato no hubiera confirmado | Review | La base solo deja pasar a "contratado" desde "en proceso", también a mano | Trigger `referidos_antes_de_cambio`, migración 004 |
+| **Review externa:** al volver a referir a alguien, su CV anterior quedaba en el bucket | Review | Se encola su borrado | `crear_referido`, migración 004 |
+| **Review externa:** texto escondido en un CV puede intentar inflar el puntaje | Review | Riesgo conocido: lo limitan el prompt, el validador y que el puntaje solo prioriza | Nota de decisiones (riesgos) |
 
 ---
 
