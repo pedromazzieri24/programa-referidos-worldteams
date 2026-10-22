@@ -168,13 +168,14 @@ begin
   select * into v_rc from recompensas where referido_id = v_martin;
   perform pg_temp.chk('Contratado → recompensa pendiente: USD 900 (senior, WorldTeams) + 100 (prioritaria)',
     v_rc.estado = 'pendiente' and v_rc.monto_usd = 1000, v_rc.monto_usd::text);
-  perform pg_temp.chk('El pago se habilita a los 90 días de la contratación', v_rc.elegible_desde = current_date + 90);
+  perform pg_temp.chk('El pago se habilita a los 90 días de la contratación (el día de Florida, no el de UTC)',
+    v_rc.elegible_desde = hoy() + 90 and (select fecha_contratacion from referidos where id = v_martin) = hoy());
 
   perform revision_diaria();
   perform pg_temp.chk('Antes de los 90 días la revisión no toca la recompensa',
     (select estado from recompensas where id = v_rc.id) = 'pendiente');
 
-  update recompensas set elegible_desde = current_date where id = v_rc.id;
+  update recompensas set elegible_desde = hoy() where id = v_rc.id;
   perform revision_diaria();
   perform pg_temp.chk('A los 90 días, sin baja → aprobada y referido elegible para pago',
     (select estado from recompensas where id = v_rc.id) = 'aprobada'
@@ -195,8 +196,8 @@ begin
   v_otro := (select r.id from referidos r join candidatos c on c.id = r.candidato_id where c.email_norm = 'tope1@test.invalid');
   update referidos set estado = 'en_proceso' where id = v_otro;
   perform marcar_contratado(v_otro);
-  update referidos set fecha_baja = current_date where id = v_otro;
-  update recompensas set elegible_desde = current_date where referido_id = v_otro;
+  update referidos set fecha_baja = hoy() where id = v_otro;
+  update recompensas set elegible_desde = hoy() where referido_id = v_otro;
   perform revision_diaria();
   perform pg_temp.chk('P5: se fue antes de los 90 días → recompensa anulada',
     (select estado from recompensas where referido_id = v_otro) = 'anulada'
@@ -216,7 +217,7 @@ begin
   perform pg_temp.chk('P1: colocado sin verificar cobra como externo (USD 400)',
     (select monto_usd from recompensas where referido_id = v_otro) = 400);
   update referentes set tipo_verificado = true where auth_user_id = u_ext;
-  update recompensas set elegible_desde = current_date where referido_id = v_otro;
+  update recompensas set elegible_desde = hoy() where referido_id = v_otro;
   perform revision_diaria();
   perform pg_temp.chk('P1: si un admin lo verifica antes del pago, cobra como WorldTeams (USD 600)',
     (select monto_usd from recompensas where referido_id = v_otro) = 600);
@@ -238,6 +239,55 @@ begin
   where referido_id = v_martin and tipo = 'mail_consentimiento';
   perform pg_temp.chk('tomar_tareas() retoma una tarea colgada más de 10 minutos (segundo intento)',
     exists (select 1 from tomar_tareas(1000) where tipo = 'mail_consentimiento' and referido_id = v_martin and intento = 2));
+end $$;
+
+do $$
+declare
+  u_lucia uuid := '00000000-0000-4000-8000-000000000001';
+  u_ext   uuid := '00000000-0000-4000-8000-000000000002';
+  b_revit uuid := (select id from busquedas where titulo = 'Revit Specialist');
+  r jsonb;
+  v_otro uuid;
+begin
+  -- ---------- Arreglos de la review externa (22/10) ----------
+  perform pg_temp.chk('El mes del tope empieza el día 1 a las 0 h de Florida (zona de config, no UTC)',
+    to_char(inicio_mes() at time zone cfg('zona_horaria'), 'DD HH24:MI') = '01 00:00'
+    and hoy() = (now() at time zone 'America/New_York')::date);
+
+  -- Pasar a "contratado" a alguien que no confirmó no se puede, ni siquiera a mano en Supabase.
+  v_otro := (select r.id from referidos r join candidatos c on c.id = r.candidato_id where c.email_norm = 'tope4@test.invalid');
+  begin
+    update referidos set estado = 'contratado' where id = v_otro;
+    perform pg_temp.chk('Contratar a mano a un referido que no confirmó → error, sin recompensa', false, 'no debería llegar acá');
+  exception when others then
+    perform pg_temp.chk('Contratar a mano a un referido que no confirmó → error, sin recompensa',
+      sqlerrm like 'Solo se puede contratar%' and not exists (select 1 from recompensas where referido_id = v_otro), sqlerrm);
+  end;
+
+  -- El mail coincide con una candidata (en la base hace 2 meses) y el LinkedIn con otro (hace 8 meses).
+  insert into candidatos (nombre, email, email_norm, origen, postulacion_directa_at)
+  values ('Ana Test', 'ana@test.invalid', 'ana@test.invalid', 'directo', now() - interval '2 months');
+  insert into candidatos (nombre, email, email_norm, linkedin_url, linkedin_norm, origen, postulacion_directa_at)
+  values ('Bruno Test', 'bruno@test.invalid', 'bruno@test.invalid', 'https://www.linkedin.com/in/bruno-test',
+          'linkedin.com/in/bruno-test', 'directo', now() - interval '8 months');
+  perform pg_temp.como(u_ext);
+  r := crear_referido(b_revit, 'Ana Test', 'ana@test.invalid', 'linkedin.com/in/bruno-test', null, null, null);
+  perform pg_temp.chk('Mail de un candidato y LinkedIn de otro → duplicado (no elige uno al azar)',
+    r ->> 'motivo' = 'duplicado'
+    and not exists (select 1 from referidos x join candidatos c on c.id = x.candidato_id
+                    where c.email_norm in ('ana@test.invalid', 'bruno@test.invalid')), r::text);
+
+  -- Volver a referir a alguien que estuvo hace más de 6 meses y tenía un CV guardado.
+  insert into candidatos (nombre, email, email_norm, cv_path, origen, postulacion_directa_at)
+  values ('Carla Test', 'carla@test.invalid', 'carla@test.invalid', 'otro-referente/cv-viejo.pdf', 'directo',
+          now() - interval '8 months');
+  perform pg_temp.como(u_lucia);
+  r := crear_referido(b_revit, 'Carla Test', 'carla@test.invalid', null, null, null, u_lucia::text || '/cv-carla.pdf');
+  perform pg_temp.chk('Volver a referir a alguien → se encola el borrado de su CV anterior',
+    (r ->> 'ok')::boolean
+    and exists (select 1 from tareas where referido_id = (r ->> 'referido_id')::uuid and tipo = 'borrar_cv'
+                and payload ->> 'cv_path' = 'otro-referente/cv-viejo.pdf')
+    and (select cv_path from candidatos where email_norm = 'carla@test.invalid') = u_lucia::text || '/cv-carla.pdf', r::text);
 end $$;
 
 -- ---------- Limpieza: borra todo lo que creó el test ----------

@@ -130,4 +130,4 @@ Las funciones devuelven **códigos** y no textos: el idioma lo pone la landing.
 
 ## Cómo se prueba
 
-`supabase/tests.sql` crea usuarios de prueba, ejercita 37 casos (registro, autorreferido, duplicados, tope, recruiting, consentimiento, recompensas, baja, ventana, panel y cola de tareas), borra lo que creó y muestra el resultado de cada caso. `supabase/chequeo.sql` verifica estructura, permisos y datos iniciales sin modificar nada. Los cambios sobre una base ya creada están en `supabase/migraciones/`.
+`supabase/tests.sql` crea usuarios de prueba, ejercita 41 casos (registro, autorreferido, duplicados, tope, recruiting, consentimiento, recompensas, baja, ventana, panel y cola de tareas), borra lo que creó y muestra el resultado de cada caso. `supabase/chequeo.sql` verifica estructura, permisos y datos iniciales sin modificar nada. Los cambios sobre una base ya creada están en `supabase/migraciones/`.

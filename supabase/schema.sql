@@ -18,12 +18,26 @@ insert into config (clave, valor, descripcion) values
   ('dias_consentimiento',         '14',             'Plazo para que el candidato confirme'),
   ('dominios_corporativos',       'worldteams.com', 'Separados por coma: quien se registra con estos dominios es gente de WorldTeams'),
   ('externos_habilitados',        'true',           'false = el programa se cierra a gente de WorldTeams'),
-  ('bono_prioritaria_usd',        '100',            'Extra si la búsqueda es prioritaria (perfil escaso)');
+  ('bono_prioritaria_usd',        '100',            'Extra si la búsqueda es prioritaria (perfil escaso)'),
+  ('zona_horaria',                'America/New_York', 'Zona de WorldTeams (Florida): define el "hoy" y el "mes" de las reglas');
 
 create function cfg(p_clave text) returns text
 language sql stable
 set search_path = public
 as $$ select valor from config where clave = p_clave $$;
+
+-- La base corre en UTC. El "hoy" y el "mes" de las reglas (tope mensual, fecha de contratación y de pago) son los
+-- de WorldTeams: si no, el cupo se reiniciaría a las 21 h de Argentina y una contratación cargada de noche
+-- quedaría con la fecha del día siguiente.
+create function hoy() returns date
+language sql stable
+set search_path = public
+as $$ select (now() at time zone cfg('zona_horaria'))::date $$;
+
+create function inicio_mes() returns timestamptz
+language sql stable
+set search_path = public
+as $$ select date_trunc('month', now() at time zone cfg('zona_horaria')) at time zone cfg('zona_horaria') $$;
 
 -- ============================================================
 -- 2. Tablas
@@ -289,8 +303,13 @@ create function referidos_antes_de_cambio() returns trigger
 language plpgsql
 as $$
 begin
+  -- Solo se contrata a quien está en proceso (es decir, confirmó). Vale también para un cambio a mano en Supabase:
+  -- sin esto, pasar a "contratado" a alguien que nunca dio su consentimiento igual generaba la recompensa.
+  if new.estado = 'contratado' and old.estado is distinct from 'contratado' and old.estado <> 'en_proceso' then
+    raise exception 'Solo se puede contratar a un referido en proceso (este está en %)', old.estado;
+  end if;
   if new.estado = 'contratado' and new.fecha_contratacion is null then
-    new.fecha_contratacion := current_date;
+    new.fecha_contratacion := hoy();
   end if;
   new.updated_at := now();
   return new;
@@ -315,7 +334,7 @@ begin
   end if;
 
   if tg_op = 'UPDATE' and new.estado = 'contratado' then
-    if new.fecha_contratacion <= new.exclusividad_hasta::date then
+    if new.fecha_contratacion <= (new.exclusividad_hasta at time zone cfg('zona_horaria'))::date then
       insert into recompensas (referido_id, referente_id, monto_usd, elegible_desde)
       values (new.id, new.referente_id, monto_para(new.id),
               new.fecha_contratacion + cfg('dias_hasta_pago')::int)
@@ -364,6 +383,8 @@ declare
   v_linkedin text := norm_linkedin(p_linkedin_url);
   v_telefono text := norm_telefono(p_telefono);
   v_cand candidatos;
+  v_coinciden int;
+  v_cv_anterior text;
   v_en_base boolean;
   v_referido_id uuid;
   v_ventana interval := make_interval(months => cfg('ventana_meses')::int);
@@ -371,7 +392,9 @@ declare
 begin
   perform set_config('app.actor', 'referente', true);
 
-  select * into v_ref from referentes where auth_user_id = auth.uid();
+  -- "for update": los pedidos del mismo referente van de a uno. Sin esto, dos cargas simultáneas cuentan el mismo
+  -- cupo y pasan las dos el tope.
+  select * into v_ref from referentes where auth_user_id = auth.uid() for update;
   if v_ref.id is null then
     raise exception 'You need to sign up to refer';
   end if;
@@ -385,7 +408,7 @@ begin
 
   -- Tope: se cuentan todas las cargas del mes, aceptadas o rechazadas.
   if (select count(*) from intentos_referido
-      where referente_id = v_ref.id and created_at >= date_trunc('month', now())) >= cfg('tope_mensual')::int then
+      where referente_id = v_ref.id and created_at >= inicio_mes()) >= cfg('tope_mensual')::int then
     return jsonb_build_object('ok', false, 'motivo', 'tope',
       'mensaje', 'You reached the limit of ' || cfg('tope_mensual') || ' referrals this month. You can refer again next month.');
   end if;
@@ -416,10 +439,17 @@ begin
       'mensaje', 'That role is no longer open.');
   end if;
 
-  -- ¿Ya existe? Por mail o por LinkedIn.
+  -- ¿Ya existe? Por mail o por LinkedIn. Si el mail coincide con un candidato y el LinkedIn con otro, no se puede
+  -- saber a cuál corresponde: se trata como duplicado en lugar de elegir uno al azar.
+  select count(*) into v_coinciden from candidatos
+  where email_norm = v_email or (v_linkedin is not null and linkedin_norm = v_linkedin);
+  if v_coinciden > 1 then
+    insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'duplicado');
+    return jsonb_build_object('ok', false, 'motivo', 'duplicado', 'mensaje', v_msg_duplicado);
+  end if;
+
   select * into v_cand from candidatos
   where email_norm = v_email or (v_linkedin is not null and linkedin_norm = v_linkedin)
-  limit 1
   for update;
 
   if v_cand.id is not null then
@@ -446,6 +476,8 @@ begin
     else
       -- Estuvo hace más de 6 meses: se actualizan sus datos con los nuevos, salvo el mail.
       -- Riesgo conocido (nota de decisiones): si volvió con otro mail, el consentimiento va al viejo.
+      -- El CV anterior se reemplaza por el nuevo: más abajo se encola su borrado para que no quede huérfano.
+      v_cv_anterior := v_cand.cv_path;
       update candidatos
       set nombre = trim(p_nombre), linkedin_url = coalesce(p_linkedin_url, linkedin_url),
           linkedin_norm = coalesce(v_linkedin, linkedin_norm), telefono = coalesce(p_telefono, telefono),
@@ -468,6 +500,10 @@ begin
   end;
 
   insert into tareas (tipo, referido_id) values ('mail_consentimiento', v_referido_id);
+  if v_cv_anterior is not null and v_cv_anterior is distinct from p_cv_path then
+    insert into tareas (tipo, referido_id, payload)
+    values ('borrar_cv', v_referido_id, jsonb_build_object('cv_path', v_cv_anterior));
+  end if;
   insert into intentos_referido (referente_id, resultado) values (v_ref.id, 'aceptado');
 
   return jsonb_build_object('ok', true, 'referido_id', v_referido_id,
@@ -613,7 +649,7 @@ as $$
   select greatest(cfg('tope_mensual')::int - count(*)::int, 0)
   from intentos_referido i
   join referentes rf on rf.id = i.referente_id
-  where rf.auth_user_id = auth.uid() and i.created_at >= date_trunc('month', now())
+  where rf.auth_user_id = auth.uid() and i.created_at >= inicio_mes()
 $$;
 
 -- Lo que muestra la página de inicio: montos y reglas. Solo lo público de config (no los dominios ni otros parámetros).
@@ -636,7 +672,7 @@ $$;
 -- ============================================================
 
 -- Punto único de entrada del evento "contratado": hoy se llama a mano; mañana, desde la herramienta de selección.
-create function marcar_contratado(p_referido_id uuid, p_fecha date default current_date) returns void
+create function marcar_contratado(p_referido_id uuid, p_fecha date default hoy()) returns void
 language plpgsql security definer
 set search_path = public
 as $$
@@ -688,7 +724,7 @@ begin
     from recompensas rc
     join referidos r on r.id = rc.referido_id
     join referentes rf on rf.id = rc.referente_id
-    where rc.estado = 'pendiente' and rc.elegible_desde <= current_date
+    where rc.estado = 'pendiente' and rc.elegible_desde <= hoy()
     for update of rc
   loop
     if v_rc.fecha_baja is null and v_rc.activo then

@@ -10,6 +10,22 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 - Se paga en USD, por el mismo canal que a los contractors.
 - Se refiere para búsquedas abiertas.
 - Supabase no reemplaza su ATS ni su CRM: es el registro del programa. En el MVP, la contratación y la baja se cargan a mano.
+- WorldTeams opera desde Florida: el "hoy" y el "mes" de las reglas (tope, fecha de contratación y de pago) son los de Florida, configurables.
+
+## Los números del canal
+
+- **Costo.** Solo se paga por colocación: USD 200 a 1.000 cada una, o USD 18 a 90 por ingreso si convierten como hoy (9 %). **La cuenta que falta** es compararlo con lo que deja una colocación (margen mensual × meses que dura) y con su costo por otros canales: es la primera pregunta para WorldTeams.
+- **Calidad y carga.** La meta del canal es igualar o superar el embudo actual (60 % pasa el screening, 9 % se coloca), por tipo de referente. 500 ingresos más son unas 300 entrevistas más por mes: por eso el candidato confirma antes de entrar y la IA lo puntúa, para que recruiting priorice en lugar de entrevistar a todos por igual.
+
+## Cómo lo lanzaría: un piloto
+
+Antes de escalar, un piloto de 3 meses con el programa abierto y el tope de 10 por mes. El MVP ya registra quién confirma; el resultado del screening sale del ATS (a mano hasta integrarlo). Como el pago llega a los 90 días, se decide con indicadores tempranos:
+
+- **Se escala** si al tercer mes el canal confirma 70 % o más y pasa el screening 60 % o más (lo mismo que hoy).
+- **Se revisa** (montos o quién refiere) si el screening queda por debajo del 40 %.
+- **Se confirma al sexto mes** con las colocaciones y la permanencia a los 90 días.
+
+Los umbrales son una propuesta para validar con WorldTeams.
 
 ## Decisiones principales
 
@@ -28,6 +44,7 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 
 ## Para validar con WorldTeams
 
+- **Cuánto deja una colocación** y cuánto cuesta hoy por otros canales: con eso se calibran los montos.
 - **Que el tope cuente los duplicados.** Un referente de buena fe pierde una carga. Alternativa lista: dos topes separados.
 - **Los montos** y cómo convive este programa con el que ya tienen para referir clientes.
 - **Si el LinkedIn pasa a ser obligatorio**, a cambio de más fricción para el referente.
@@ -38,6 +55,7 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 - **La misma persona con otro mail** pasa como nueva si no se carga el LinkedIn. Lo frenan el LinkedIn y el teléfono, que solo se paga por contratación y que recruiting entrevista a la persona.
 - **9 de cada 10 referentes no van a cobrar**, porque la mayoría de los referidos no se coloca. Lo mitiga el panel de seguimiento.
 - **Si n8n se corta a mitad de una tarea**, un mail puede salir dos veces.
+- **Texto escondido en un CV** puede intentar inflar el puntaje de la IA. Lo limitan el prompt (el CV se trata como dato), un validador de la respuesta y que el puntaje solo prioriza: la decisión es de recruiting.
 
 ## Qué dejé afuera por tiempo
 
@@ -51,12 +69,12 @@ Construí un MVP que funciona de punta a punta: la landing para referir y seguir
 
 1. **Integración con el ATS**, para que la regla de duplicados vea toda la base de candidatos.
 2. **Integración con el CRM**, para que la contratación y la baja entren solas.
-3. **Pago en dos tramos:** una parte cuando el perfil queda disponible para presentar y el resto a los 90 días. En el panel, sería un segundo hito en la barra hacia el pago.
-4. **Autocompletar el referido desde el CV:** leer el PDF en nuestro servidor y sacar el mail, el teléfono y el LinkedIn con patrones. Sin IA, porque el CV de un tercero no sale a otro servicio antes de que el candidato acepte.
+3. **Pago en dos tramos**, contra el riesgo de que casi nadie cobre: por ejemplo, USD 50 cuando el perfil queda disponible para presentar (hoy, el 40 % de los ingresos) y el resto a los 90 días. Cuesta unos USD 20 más por ingreso y hace que 4 de cada 10 referidos le dejen algo al referente, no 1. Necesita que el ATS avise cuándo el perfil queda disponible; en el panel, sería un segundo hito de la barra.
+4. **Menos fricción al referir:** autocompletar el formulario desde el CV (leyendo el PDF en nuestro servidor y sacando el mail, el teléfono y el LinkedIn con patrones; sin IA, porque el CV de un tercero no sale a otro servicio antes de que el candidato acepte) y evaluar que el CV sea opcional, a cambio de recibir a ese candidato sin puntaje.
 5. **n8n en un servidor** (hoy corre en mi computadora) y **mail transaccional** con el dominio de WorldTeams.
 6. **Link directo al CV** en el aviso a recruiting (hoy trae la ruta del archivo).
 7. Link personal para que el candidato cargue sus datos, landing en español y portugués, y antifraude avanzado.
 
 ## Cómo usé la IA
 
-Trabajé con Claude Code en todo el proceso, con una regla fija: la IA propone cada cambio con su porqué y sus alternativas, y ninguna decisión de negocio entra sin mi OK. Todo lo que propuso lo probé: 37 tests de reglas, 25 del código de la automatización y 19 casos de punta a punta (`PRUEBAS.md`). Cada iteración, con lo que acepté y lo que corregí, está en [`BITACORA-IA.md`](../BITACORA-IA.md).
+Trabajé con Claude Code en todo el proceso, con una regla fija: la IA propone cada cambio con su porqué y sus alternativas, y ninguna decisión de negocio entra sin mi OK. Todo lo que propuso lo probé: 41 tests de reglas, 25 del código de la automatización y 19 casos de punta a punta (`PRUEBAS.md`). Al final, una review externa del repo marcó arreglos técnicos y de producto, que están hechos (bitácora del 22/10). Cada iteración, con lo que acepté y lo que corregí, está en [`BITACORA-IA.md`](../BITACORA-IA.md).
