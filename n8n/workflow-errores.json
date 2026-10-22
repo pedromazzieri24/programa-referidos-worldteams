@@ -1,0 +1,210 @@
+{
+  "name": "Referidos – Errores",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "cc2a3afc-bb65-444e-af22-023c16d4c4b4",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "registrar-error-referidos",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "656f5d62-c123-40f9-8ff6-6098838b89b0",
+      "name": "Webhook de reportes",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        120
+      ],
+      "webhookId": "0cb7e14f-d2be-4928-9d84-1a35c0aafc33"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Unifica las dos entradas en una misma forma. No guarda datos personales: solo qué falló y dónde\n// (si un mensaje de error trae un mail, se tapa).\nconst corto = (v, n = 300) => String(v ?? '').replace(/[^\\s@<>\"'()]+@[^\\s@<>\"'()]+/g, '[email]').slice(0, n);\n\n// Texto de la alerta para Telegram (modo HTML: se escapan <, > y &; con Markdown, un \"_\" como el de\n// \"aviso_contratacion\" hacía que Telegram rechazara el mensaje).\nconst html = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst alerta = r => ({ ...r, texto_alerta: `ALERTA (referidos): ${html(r.workflow)} falló en \"${html(r.nodo)}\"\\n`\n  + `${html(r.mensaje)}\\n\\nEjecución: ${html(r.execution_url ?? 'sin link')}` });\n\n// Entrada 1: Error Trigger -> { execution: { id, url, error, lastNodeExecuted }, workflow: { id, name } }\nif ($json.execution) {\n  const e = $json.execution;\n  return { json: alerta({\n    gravedad: 'critico',\n    workflow: corto($json.workflow?.name, 100),\n    nodo: corto(e.lastNodeExecuted, 100),\n    mensaje: corto(e.error?.message ?? 'Error sin mensaje'),\n    execution_id: corto(e.id, 50),\n    execution_url: e.url ?? null,\n  }) };\n}\n\n// Entrada 2: webhook de reportes -> el cuerpo viene en $json.body\nconst b = $json.body ?? {};\nconst url = b.workflow_id && b.execution_id\n  ? `http://localhost:5678/workflow/${b.workflow_id}/executions/${b.execution_id}`\n  : null;\nreturn { json: alerta({\n  gravedad: b.gravedad === 'aviso' ? 'aviso' : 'critico',\n  workflow: corto(b.workflow, 100),\n  nodo: corto(b.nodo, 100),\n  mensaje: corto(b.mensaje || 'Sin mensaje'),\n  execution_id: corto(b.execution_id, 50),\n  execution_url: url,\n}) };\n"
+      },
+      "id": "ad75db07-c086-4ade-a30d-4c8f9a8c1e34",
+      "name": "Normalizar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "errores",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "gravedad",
+              "fieldValue": "={{ $json.gravedad }}"
+            },
+            {
+              "fieldId": "workflow",
+              "fieldValue": "={{ $json.workflow }}"
+            },
+            {
+              "fieldId": "nodo",
+              "fieldValue": "={{ $json.nodo }}"
+            },
+            {
+              "fieldId": "mensaje",
+              "fieldValue": "={{ $json.mensaje }}"
+            },
+            {
+              "fieldId": "execution_id",
+              "fieldValue": "={{ $json.execution_id }}"
+            },
+            {
+              "fieldId": "execution_url",
+              "fieldValue": "={{ $json.execution_url }}"
+            }
+          ]
+        }
+      },
+      "id": "d07571c8-a6eb-470b-b1ad-2fe86289b240",
+      "name": "Registrar error",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        540,
+        -120
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "pMWiM7xNL0iuWIv9",
+          "name": "Supabase account MVP"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4d8646ad-2380-4cdf-acd8-e33dfafe8bcb",
+              "leftValue": "={{ $json.gravedad === 'critico' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "da9ffb45-4446-47a7-abf3-78f94220a659",
+      "name": "¿Es crítico?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        540,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "REEMPLAZAR_CHAT_ID",
+        "text": "={{ $json.texto_alerta }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "424fb073-3e25-4d46-8fb4-b678f9312e48",
+      "name": "Alertar (Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        100
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "F6cZ8Ee1yk74Q0re",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook de reportes": {
+      "main": [
+        [
+          {
+            "node": "Normalizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar": {
+      "main": [
+        [
+          {
+            "node": "Registrar error",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "¿Es crítico?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es crítico?": {
+      "main": [
+        [
+          {
+            "node": "Alertar (Telegram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Buenos_Aires"
+  }
+}

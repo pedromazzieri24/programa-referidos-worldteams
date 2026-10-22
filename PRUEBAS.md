@@ -4,8 +4,9 @@ El sistema se prueba en dos niveles, que se complementan:
 
 | Nivel | Qué prueba | Cómo se corre | Estado |
 |---|---|---|---|
-| **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 36 casos en verde (20/10) |
+| **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 37 casos en verde (22/10) |
 | **2. Prueba de punta a punta** (manual) | Que todo funcione junto, como lo usaría una persona: la landing, el login por mail, el CV, la base y el panel | A mano, en la landing local, con los personajes de la demo. Se verifica en pantalla y con consultas SQL | 10 casos en verde (21/10) |
+| **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 6 casos en verde (22/10) |
 
 **Por qué los dos:** los tests de reglas comprueban que la base decide bien, pero no pasan por la pantalla. La prueba de punta a punta encontró cosas que los tests no podían ver: un contador desactualizado, un formulario que se vaciaba y una tarea que quedaba en la cola sin sentido (ver "Hallazgos").
 
@@ -60,6 +61,19 @@ Búsquedas usadas: **Revit Specialist** (semi senior: USD 400 externo / 600 Worl
 
 **Por qué el cupo terminó en 5 de 10:** la regla P4 cuenta todos los intentos, también los rechazados, para que nadie use el formulario para averiguar quién está en la base.
 
+### Con n8n (22/10, landing en Vercel)
+
+Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato: **Tomás Acosta** (`pedro.mazzieri24+tomas@gmail.com`), desarrollador backend referido para **BIM Coordinator**, con el CV ficticio `07-reserva-tomas-acosta.pdf`. Se eligió un perfil que no encaja para ver si la IA lo distingue. Los mails internos llegan a alias: `+recruiting` y `+admin`.
+
+| # | Caso | Qué se hizo | Resultado esperado | Obtenido |
+|---|---|---|---|---|
+| **N8N-01** | Mail de consentimiento | Referir a Tomás desde `/refer` | En menos de 1 minuto le llega el mail con la búsqueda, el plazo de 14 días y el botón para responder; el panel muestra "Waiting for candidate" | ✅ |
+| **N8N-02** | Puntaje del CV y aviso a recruiting | Tomás acepta desde el mail | El panel pasa a "In selection process"; Gemini puntúa el CV y recruiting recibe el aviso con el puntaje, la justificación y el comando para marcarlo contratado | ✅ **1/10**: "no tiene experiencia en arquitectura, BIM ni Navisworks" |
+| **N8N-03** | Aviso de contratación | `marcar_contratado` desde el SQL Editor | Panel "Hired", USD 400 a 90 días; al referente le llega "was hired" con la fecha de pago (20/01/2027) | ✅ |
+| **N8N-04** | Revisión diaria | Adelantar `elegible_desde` a hoy y ejecutar a mano el workflow de revisión | Recompensa aprobada: panel "Reward approved" y Earned USD 400; mail al referente y pedido de pago a administración con el comando `marcar_pagada` | ✅ |
+| **N8N-05** | Corte a mitad de camino (no planificado) | Se cortó la conexión con Supabase justo después de mandar los mails y antes de cerrar las tareas | Las tareas quedan "en curso" y se retoman a los 10 minutos | ✅ Se retomaron solas. El mail salió dos veces, como estaba documentado |
+| **N8N-06** | Alerta de error | Una tarea agotó sus 3 intentos (Gmail no respondió) y, después, n8n no pudo conectarse a Supabase | Registro en la tabla `errores` y alerta por Telegram | ✅ Después de corregir el formato de la alerta (ver hallazgos) |
+
 ---
 
 ## 3. Hallazgos de la prueba y qué se decidió
@@ -72,6 +86,11 @@ Búsquedas usadas: **Revit Specialist** (semi senior: USD 400 externo / 600 Worl
 | La misma persona con otro mail pasa como nueva si no se carga el LinkedIn | E2E-07 | Riesgo conocido, documentado. Segunda etapa: normalizar alias. A discutir: LinkedIn obligatorio | Contexto §4 (antiabuso, regla 8) |
 | El mail de consentimiento queda en la cola aunque el candidato ya haya confirmado | E2E-03 | n8n chequea el estado del referido antes de cada tarea | Contexto §8 (lo que necesita n8n) |
 | Si se verifica a la referente después de la contratación, el panel sigue mostrando la tarifa externa hasta el día 90 | E2E-09 | En la demo, verificar a Lucía **antes** de contratar a Martín | Contexto §4 (quién puede referir) |
+| `tests.sql` tomaba también las tareas reales de la cola (`tomar_tareas()` toma todas las pendientes) y las dejaba "en curso". Por eso una tarea real llegó a su tercer intento en minutos | N8N-06 | El test guarda cómo estaba la cola y, al final, devuelve las tareas reales a su estado | `supabase/tests.sql` |
+| Telegram rechazaba la alerta: el modo Markdown no acepta un `_` suelto, como el de "aviso_contratacion" | N8N-06 | La alerta va en modo HTML, con los caracteres especiales escapados | `n8n/build_errores.py` |
+| Pegar el JSON en n8n no trae la configuración del workflow: quedaron sin workflow de errores y sin zona horaria | N8N-06 | Paso agregado a la puesta en marcha: configurarlos a mano en *Settings* | `n8n/README.md` |
+| Gmail tardó 9 minutos en fallar ("Greeting never received"): una ejecución así se puede cruzar con el reintento de los 10 minutos | N8N-06 | Tope de 5 minutos por ejecución del procesador | `n8n/build_tareas.py` |
+| Con el Wi-Fi de casa, las conexiones a Supabase se cortaban de a ratos (rechazo en ~40 ms, solo a Supabase). Con los datos del celular, 34 ejecuciones seguidas sin error | N8N-05/06 | **A definir para la demo en vivo:** hotspot o una VPN (Cloudflare WARP) | Este archivo |
 
 ---
 
@@ -79,8 +98,8 @@ Búsquedas usadas: **Revit Specialist** (semi senior: USD 400 externo / 600 Worl
 
 | Qué | Cuándo |
 |---|---|
-| Los mismos casos en la URL de Vercel (y el aviso de la pestaña con un login real) | Después del deploy |
-| Los mails reales (consentimiento y avisos), el puntaje del CV con Gemini, la revisión diaria y las alertas de error | Fase 3 (n8n) |
+| Los mismos casos en la URL de Vercel (y el aviso de la pestaña con un login real). Los de n8n ya corrieron en Vercel | Después del deploy |
+| El rechazo del consentimiento con n8n: aviso "no confirmó" al referente y borrado del CV | Antes de la entrega (1 referido más) |
 | **E2E-11: registro repetido sin confirmar el mail.** Registrarse, no abrir el mail y volver a registrarse con los mismos datos: antes de los 60 s (¿qué mensaje sale?) y después, cambiando el nombre. Verificar que el primer link falla, que el segundo entra, que queda un solo referente y con qué datos, y qué pasa si esa persona intenta entrar por `/login` antes de confirmar. Hoy no lo cubre nadie: `tests.sql` inserta directo en la base y no pasa por Supabase Auth | Antes de la entrega (manual, 2 o 3 mails) |
 
 ---

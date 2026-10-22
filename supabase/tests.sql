@@ -4,6 +4,10 @@
 
 create temp table resultados (n serial, caso text, ok boolean, detalle text);
 
+-- tomar_tareas() no distingue las tareas del test de las reales: toma todas las pendientes.
+-- Se guarda cómo estaba la cola para devolverle a n8n, al final, las tareas reales que tomó el test.
+create temp table tareas_antes as select id, estado, intentos, tomada_at, clock_timestamp() as inicio from tareas;
+
 create function pg_temp.chk(p_caso text, p_ok boolean, p_detalle text default null) returns void
 language sql as $$ insert into resultados (caso, ok, detalle) values (p_caso, coalesce(p_ok, false), p_detalle) $$;
 
@@ -229,9 +233,19 @@ begin
   perform pg_temp.chk('tomar_tareas() entrega los datos que necesita el mail', i > 0, i::text);
   perform pg_temp.chk('tomar_tareas() no vuelve a entregar una tarea tomada',
     not exists (select 1 from tomar_tareas(1000) where tipo = 'mail_consentimiento'));
+  -- n8n se cortó a mitad de camino: la tarea quedó "en_curso" hace más de 10 minutos.
+  update tareas set tomada_at = now() - interval '11 minutes'
+  where referido_id = v_martin and tipo = 'mail_consentimiento';
+  perform pg_temp.chk('tomar_tareas() retoma una tarea colgada más de 10 minutos (segundo intento)',
+    exists (select 1 from tomar_tareas(1000) where tipo = 'mail_consentimiento' and referido_id = v_martin and intento = 2));
 end $$;
 
 -- ---------- Limpieza: borra todo lo que creó el test ----------
+-- Devuelve a la cola las tareas reales que tomó el test, como estaban (el test corre en menos de un segundo:
+-- que n8n tome una tarea justo en ese lapso es improbable).
+update tareas t set estado = a.estado, intentos = a.intentos, tomada_at = a.tomada_at
+from tareas_antes a
+where a.id = t.id and t.estado = 'en_curso' and t.tomada_at >= a.inicio;
 delete from tareas where referido_id in (select r.id from referidos r join referentes rf on rf.id = r.referente_id
                                          where rf.auth_user_id::text like '00000000-0000-4000-8000-%');
 delete from recompensas where referente_id in (select id from referentes where auth_user_id::text like '00000000-0000-4000-8000-%');
