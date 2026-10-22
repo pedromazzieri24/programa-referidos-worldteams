@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { EstadoForm } from "@/lib/tipos";
-import { validarLinkedin, validarPais, validarTelefono } from "@/lib/validacion";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIPOS = ["interno", "colocado", "externo"];
@@ -51,8 +50,9 @@ function linkEnviado(email: string): EstadoForm {
   };
 }
 
-// Registro: manda el magic link con los datos del perfil. El referente se crea en la base cuando confirma el mail
+// Registro: manda el magic link con nombre y relación. El referente se crea en la base cuando confirma el mail
 // (trigger handle_new_user), y ahí se define el tipo según el dominio: lo que declara acá no alcanza para cobrar más.
+// País, teléfono, área y LinkedIn quedan vacíos: se piden al cobrar (registro corto, 22/10).
 export async function registrarse(_prev: EstadoForm, formData: FormData): Promise<EstadoForm> {
   const email = texto(formData, "email").toLowerCase();
   const nombre = texto(formData, "nombre");
@@ -61,24 +61,13 @@ export async function registrarse(_prev: EstadoForm, formData: FormData): Promis
   if (!nombre) return { ok: false, mensaje: "Please tell us your name." };
   if (!EMAIL_RE.test(email)) return { ok: false, mensaje: "That email doesn't look right." };
   if (!TIPOS.includes(tipo)) return { ok: false, mensaje: "Choose your relationship with WorldTeams." };
-  const pais = validarPais(texto(formData, "pais"));
-  const telefono = validarTelefono(texto(formData, "telefono"));
-  const linkedin = validarLinkedin(texto(formData, "linkedin_url"));
-  for (const r of [pais, telefono, linkedin]) if (!r.ok) return { ok: false, mensaje: r.error };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: await urlDeRetorno("/refer"),
-      data: {
-        nombre,
-        tipo_declarado: tipo,
-        pais: pais.ok ? pais.valor : null,
-        area: texto(formData, "area"),
-        telefono: telefono.ok ? telefono.valor : null,
-        linkedin_url: linkedin.ok ? linkedin.valor : null,
-      },
+      data: { nombre, tipo_declarado: tipo },
     },
   });
 
