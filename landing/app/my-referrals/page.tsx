@@ -1,15 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { diasHasta, formatDia, formatFecha, formatUsd } from "@/lib/format";
+import { diasHasta, formatFecha, formatUsd } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { ESTADOS, MOTIVOS, TIPO_REFERENTE } from "@/lib/textos";
 import type { InfoPrograma, MiReferido, Perfil } from "@/lib/tipos";
 import { AvisoIngreso } from "../components/AvisoIngreso";
+import { BarraPago } from "../components/BarraPago";
 import { Seguimiento } from "../components/Seguimiento";
 
 export const dynamic = "force-dynamic";
 
 const ACTIVOS = ["pendiente_consentimiento", "en_proceso", "contratado"];
+
+// Desde la contratación (con recompensa) el referido muestra la barra hacia el pago en lugar de la frase.
+function conBarra(r: MiReferido) {
+  return r.estado === "elegible_pago" || r.estado === "pagado" || (r.estado === "contratado" && r.elegible_desde != null);
+}
 
 // La línea de abajo de cada referido: qué sigue, en una frase.
 function proximoPaso(r: MiReferido, diasHastaPago: number) {
@@ -18,15 +24,8 @@ function proximoPaso(r: MiReferido, diasHastaPago: number) {
       return `We emailed them to confirm. Your referral is valid until ${formatFecha(r.vale_hasta)}.`;
     case "en_proceso":
       return `They're in the selection process. Valid until ${formatFecha(r.vale_hasta)}.`;
-    case "contratado": {
-      if (!r.elegible_desde) return "Hired outside the referral window: no reward for this one.";
-      const dias = diasHasta(r.elegible_desde);
-      return dias > 0 ? `Payout in ${dias} days (${formatDia(r.elegible_desde)}).` : "Payout check in progress.";
-    }
-    case "elegible_pago":
-      return "Your reward is approved. Payment is on its way.";
-    case "pagado":
-      return "Reward paid. Thank you!";
+    case "contratado":
+      return "Hired outside the referral window: no reward for this one.";
     case "no_confirmado":
       return MOTIVOS[r.motivo ?? ""] ?? "They didn't confirm.";
     case "descartado":
@@ -118,6 +117,7 @@ export default async function MyReferralsPage({ searchParams }: PageProps<"/my-r
           {referidos.map((r) => {
             const estado = ESTADOS[r.estado] ?? { texto: r.estado, color: "bg-zinc-100" };
             const monto = r.recompensa_usd ?? r.recompensa_estimada;
+            const barra = conBarra(r);
             return (
               <li key={r.referido_id} className="rounded-2xl border border-zinc-200 p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -129,7 +129,7 @@ export default async function MyReferralsPage({ searchParams }: PageProps<"/my-r
                   </div>
                   <div className="text-right">
                     <span className={`rounded-full px-2.5 py-1 font-display text-xs font-medium ${estado.color}`}>{estado.texto}</span>
-                    {monto != null && (
+                    {monto != null && !barra && (
                       <p className={`mt-2 font-display text-sm ${r.estado === "anulado" ? "text-zinc-400 line-through" : ""}`}>
                         {formatUsd(monto)}
                         <span className="text-zinc-500">{r.recompensa_usd == null ? " potential" : ""}</span>
@@ -140,7 +140,20 @@ export default async function MyReferralsPage({ searchParams }: PageProps<"/my-r
                 <div className="mt-5 max-w-3xl">
                   <Seguimiento estado={r.estado} diasHastaPago={info.dias_hasta_pago} />
                 </div>
-                <p className="mt-3 text-sm text-zinc-600">{proximoPaso(r, info.dias_hasta_pago)}</p>
+                {barra ? (
+                  <div className="mt-5">
+                    <BarraPago
+                      monto={monto ?? 0}
+                      total={info.dias_hasta_pago}
+                      restantes={r.elegible_desde ? diasHasta(r.elegible_desde) : 0}
+                      estado={r.estado}
+                      fechaPago={r.elegible_desde}
+                      fechaContratacion={r.fecha_contratacion}
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-zinc-600">{proximoPaso(r, info.dias_hasta_pago)}</p>
+                )}
               </li>
             );
           })}
