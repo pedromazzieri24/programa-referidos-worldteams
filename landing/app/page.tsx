@@ -78,7 +78,7 @@ export default async function Home() {
                     <Seguimiento estado={e.estado} diasHastaPago={info.dias_hasta_pago} oscuro />
                   </div>
                   {e.restantes != null ? (
-                    <BarraPago monto={e.monto} total={info.dias_hasta_pago} restantes={e.restantes} estado={e.estado} compacta />
+                    <BarraPago total={info.dias_hasta_pago} restantes={e.restantes} estado={e.estado} oscuro />
                   ) : (
                     <p className="mt-2 text-xs text-zinc-400">{e.nota}</p>
                   )}
