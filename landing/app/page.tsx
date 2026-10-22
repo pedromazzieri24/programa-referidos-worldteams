@@ -10,12 +10,14 @@ import { Seguimiento } from "./components/Seguimiento";
 // Montos y búsquedas se leen de la base en cada request: si WorldTeams los cambia, la página se actualiza sola.
 export const dynamic = "force-dynamic";
 
-const PASOS = [
-  { titulo: "Sign up", texto: "With your email. We send you a link to log in, no password needed." },
-  { titulo: "Refer", texto: "Pick an open role and share the person's details and CV." },
-  { titulo: "They confirm", texto: "We ask them to opt in. Their CV is scored against the role." },
-  { titulo: "You earn", texto: "If they're hired and stay for 90 days, the reward is yours." },
-];
+function pasos(diasHastaPago: number) {
+  return [
+    { titulo: "Sign up", texto: "With your email. We send you a link to log in, no password needed." },
+    { titulo: "Refer", texto: "Pick an open role and share the person's details and CV." },
+    { titulo: "They confirm", texto: "We ask them to opt in. Their CV is scored against the role." },
+    { titulo: "You earn", texto: `If they're hired and stay for ${diasHastaPago} days, the reward is yours.` },
+  ];
+}
 
 export default async function Home() {
   const supabase = await createClient();
@@ -72,7 +74,7 @@ export default async function Home() {
                     <p className="font-display text-sm text-wt-lima">{formatUsd(e.monto)}</p>
                   </div>
                   <div className="mt-3">
-                    <Seguimiento estado={e.estado} oscuro />
+                    <Seguimiento estado={e.estado} diasHastaPago={info.dias_hasta_pago} oscuro />
                   </div>
                   <p className="mt-2 text-xs text-zinc-400">{e.nota}</p>
                 </div>
@@ -89,7 +91,7 @@ export default async function Home() {
           As easy as 1-2-3-<span className="resaltado">reward</span>
         </h2>
         <ol className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {PASOS.map((p, i) => (
+          {pasos(info.dias_hasta_pago).map((p, i) => (
             <li key={p.titulo}>
               <span className="flex size-8 items-center justify-center rounded-full bg-wt-negro font-display text-sm font-bold text-white">
                 {i + 1}

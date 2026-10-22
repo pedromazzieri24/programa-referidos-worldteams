@@ -81,6 +81,7 @@ Búsquedas usadas: **Revit Specialist** (semi senior: USD 400 externo / 600 Worl
 |---|---|
 | Los mismos casos en la URL de Vercel (y el aviso de la pestaña con un login real) | Después del deploy |
 | Los mails reales (consentimiento y avisos), el puntaje del CV con Gemini, la revisión diaria y las alertas de error | Fase 3 (n8n) |
+| **E2E-11: registro repetido sin confirmar el mail.** Registrarse, no abrir el mail y volver a registrarse con los mismos datos: antes de los 60 s (¿qué mensaje sale?) y después, cambiando el nombre. Verificar que el primer link falla, que el segundo entra, que queda un solo referente y con qué datos, y qué pasa si esa persona intenta entrar por `/login` antes de confirmar. Hoy no lo cubre nadie: `tests.sql` inserta directo en la base y no pasa por Supabase Auth | Antes de la entrega (manual, 2 o 3 mails) |
 
 ---
 

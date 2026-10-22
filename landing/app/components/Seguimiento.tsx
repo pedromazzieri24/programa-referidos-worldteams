@@ -1,6 +1,9 @@
 // Línea de progreso de un referido, tipo "seguimiento de envío". La usan el panel y la vista previa de la home.
+// Los días hasta el pago vienen de config (info_programa), como el resto de los números del negocio.
 
-export const PASOS_SEGUIMIENTO = ["Referred", "Confirmed", "In process", "Hired", "90 days", "Paid"];
+function pasos(diasHastaPago: number) {
+  return ["Referred", "Confirmed", "In process", "Hired", `${diasHastaPago} days`, "Paid"];
+}
 
 // Hasta qué paso llegó cada estado (índice del último paso completo) y si el recorrido se cortó ahí.
 const AVANCE: Record<string, { hecho: number; cortado?: boolean }> = {
@@ -14,12 +17,12 @@ const AVANCE: Record<string, { hecho: number; cortado?: boolean }> = {
   anulado: { hecho: 3, cortado: true },
 };
 
-export function Seguimiento({ estado, oscuro = false }: { estado: string; oscuro?: boolean }) {
+export function Seguimiento({ estado, diasHastaPago, oscuro = false }: { estado: string; diasHastaPago: number; oscuro?: boolean }) {
   const { hecho, cortado } = AVANCE[estado] ?? { hecho: 0 };
 
   return (
     <ol className="flex w-full items-start">
-      {PASOS_SEGUIMIENTO.map((paso, i) => {
+      {pasos(diasHastaPago).map((paso, i) => {
         const completo = i <= hecho;
         const actual = i === hecho + 1 && !cortado;
         const corte = cortado && i === hecho + 1;

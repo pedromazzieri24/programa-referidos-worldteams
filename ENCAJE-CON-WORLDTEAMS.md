@@ -32,7 +32,7 @@ Es el mismo stack que ya usa el equipo (Supabase + n8n): no suma tecnologías nu
 
 | Dato | Dónde vive hoy | En el programa | Por qué hace falta |
 |---|---|---|---|
-| Candidato y CV | ATS | Copia mínima en `candidatos` (mail, LinkedIn, teléfono, CV hasta el consentimiento) | Para detectar duplicados y pedir el consentimiento |
+| Candidato y CV | ATS | Copia mínima en `candidatos` (mail, LinkedIn, teléfono y CV, que se borra si no da su consentimiento) | Para detectar duplicados y pedir el consentimiento |
 | Etapa del candidato | ATS | Estado resumido en `referidos` | Para el panel del referente |
 | Contratación y baja | CRM | `fecha_contratacion`, `fecha_baja` | Disparan o anulan el premio |
 | Quién refiere (identidad, tipo, verificación) | — | `referentes` | Define el monto y quién puede cobrar |

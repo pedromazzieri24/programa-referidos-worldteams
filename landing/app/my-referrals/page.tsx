@@ -60,11 +60,12 @@ export default async function MyReferralsPage({ searchParams }: PageProps<"/my-r
     supabase.rpc("cupo_restante"),
     supabase.rpc("info_programa"),
   ]);
-  if (error) throw new Error(`Could not load your referrals: ${error.message}`);
+  const info = infoData as InfoPrograma | null;
+  // Sin info_programa no hay de dónde sacar el tope ni los días hasta el pago: mejor un error que un número inventado.
+  if (error || !info) throw new Error(`Could not load your referrals: ${error?.message ?? "missing program info"}`);
   const referidos = (data ?? []) as MiReferido[];
   const cupo = (cupoData as number | null) ?? 0;
-  const info = infoData as InfoPrograma | null;
-  const tope = info?.tope_mensual ?? 0;
+  const tope = info.tope_mensual;
 
   // Potencial: lo que podrías cobrar por los que siguen en carrera. Ganado: lo aprobado o pagado.
   const potencial = referidos
@@ -137,9 +138,9 @@ export default async function MyReferralsPage({ searchParams }: PageProps<"/my-r
                   </div>
                 </div>
                 <div className="mt-5 max-w-3xl">
-                  <Seguimiento estado={r.estado} />
+                  <Seguimiento estado={r.estado} diasHastaPago={info.dias_hasta_pago} />
                 </div>
-                <p className="mt-3 text-sm text-zinc-600">{proximoPaso(r, info?.dias_hasta_pago ?? 90)}</p>
+                <p className="mt-3 text-sm text-zinc-600">{proximoPaso(r, info.dias_hasta_pago)}</p>
               </li>
             );
           })}
