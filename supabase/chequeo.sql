@@ -2,7 +2,7 @@
 -- Correr en el SQL Editor cuando quieras. Todas las filas tienen que dar ok = true.
 
 with funciones_esperadas(nombre) as (values
-  ('cfg'), ('norm_email'), ('norm_linkedin'), ('norm_telefono'), ('grupo_referente'), ('monto_para'),
+  ('cfg'), ('hoy'), ('inicio_mes'), ('norm_email'), ('norm_linkedin'), ('norm_telefono'), ('grupo_referente'), ('monto_para'),
   ('actor_actual'), ('handle_new_user'), ('referidos_antes_de_cambio'), ('referidos_despues_de_cambio'),
   ('crear_referido'), ('datos_consentimiento'), ('confirmar_consentimiento'), ('cerrar_no_confirmado'),
   ('rechazar_consentimiento'), ('mis_referidos'), ('cupo_restante'), ('info_programa'), ('marcar_contratado'), ('marcar_pagada'),
@@ -39,7 +39,7 @@ chequeos(orden, area, chequeo, esperado, obtenido) as (
     (select count(*)::text from pg_policies where schemaname = 'storage' and tablename = 'objects'
      and policyname like '%CV%carpeta%')
   -- Datos iniciales
-  union all select 12, 'Datos', 'Parámetros en config', '7', (select count(*)::text from config)
+  union all select 12, 'Datos', 'Parámetros en config', '8', (select count(*)::text from config)
   union all select 13, 'Datos', 'Búsquedas abiertas', '5', (select count(*)::text from busquedas where estado = 'abierta')
   union all select 14, 'Datos', 'Filas de montos (3 seniority × 2 grupos)', '6', (select count(*)::text from montos_incentivo)
   union all select 15, 'Datos', 'Candidatos directos de ejemplo', '3', (select count(*)::text from candidatos where origen = 'directo')
