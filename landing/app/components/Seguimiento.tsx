@@ -19,13 +19,16 @@ const AVANCE: Record<string, { hecho: number; cortado?: boolean }> = {
 
 export function Seguimiento({ estado, diasHastaPago, oscuro = false }: { estado: string; diasHastaPago: number; oscuro?: boolean }) {
   const { hecho, cortado } = AVANCE[estado] ?? { hecho: 0 };
+  const lista = pasos(diasHastaPago);
 
   return (
     <ol className="flex w-full items-start">
-      {pasos(diasHastaPago).map((paso, i) => {
+      {lista.map((paso, i) => {
         const completo = i <= hecho;
         const actual = i === hecho + 1 && !cortado;
         const corte = cortado && i === hecho + 1;
+        // En el celular no entran las seis etiquetas: se ve solo la del paso en que está (o la última, si terminó).
+        const visibleEnCelular = actual || corte || (hecho === lista.length - 1 && i === hecho);
         const circulo = completo
           ? "bg-wt-lima border-wt-lima text-wt-negro"
           : corte
@@ -43,7 +46,11 @@ export function Seguimiento({ estado, diasHastaPago, oscuro = false }: { estado:
             <span className={`relative z-10 flex size-4 items-center justify-center rounded-full border-2 text-[9px] font-bold ${circulo}`}>
               {completo ? "✓" : corte ? "×" : ""}
             </span>
-            <span className={`mt-1.5 text-center text-[11px] leading-tight ${oscuro ? "text-zinc-300" : "text-zinc-500"} ${actual ? "font-semibold" : ""}`}>
+            <span
+              className={`mt-1.5 text-center text-[11px] leading-tight ${oscuro ? "text-zinc-300" : "text-zinc-500"} ${actual ? "font-semibold" : ""} ${
+                visibleEnCelular ? "whitespace-nowrap max-sm:font-semibold sm:whitespace-normal" : "max-sm:hidden"
+              }`}
+            >
               {paso}
             </span>
           </li>
