@@ -6,7 +6,7 @@ El sistema se prueba en dos niveles, que se complementan:
 |---|---|---|---|
 | **1. Tests de reglas** (automáticos) | Cada regla del negocio, directo contra la base, incluidos los casos raros (tope, vencimientos, 90 días) | `supabase/tests.sql` en el SQL Editor de Supabase. Crea sus propios datos, los borra al terminar y devuelve una tabla con `ok = true` por caso | 41 casos en verde en Supabase (22/10, con la migración 004) |
 | **2. Prueba de punta a punta** (manual) | Que todo funcione junto, como lo usaría una persona: la landing, el login por mail, el CV, la base y el panel | A mano, en la landing local, con los personajes de la demo. Se verifica en pantalla y con consultas SQL | 10 casos en verde (21/10) |
-| **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 7 casos en verde (22/10) |
+| **2b. Punta a punta con n8n** (manual) | Que cada evento dispare su mail: consentimiento, puntaje del CV, contratación, revisión diaria y alertas de error | En la landing de Vercel, con n8n corriendo en local. Se verifica en la casilla, en el panel y en las ejecuciones de n8n | 8 casos en verde (22 y 23/10) |
 | **2c. Mejoras de la landing** (manual) | El registro corto y la línea de meta hacia el pago | En la landing local, con una cuenta nueva y el panel de una referente con un contratado | 2 casos en verde (22/10) |
 
 **Por qué los dos:** los tests de reglas comprueban que la base decide bien, pero no pasan por la pantalla. La prueba de punta a punta encontró cosas que los tests no podían ver: un contador desactualizado, un formulario que se vaciaba y una tarea que quedaba en la cola sin sentido (ver "Hallazgos").
@@ -76,6 +76,7 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 | **N8N-05** | Corte a mitad de camino (no planificado) | Se cortó la conexión con Supabase justo después de mandar los mails y antes de cerrar las tareas | Las tareas quedan "en curso" y se retoman a los 10 minutos | ✅ Se retomaron solas. El mail salió dos veces, como estaba documentado |
 | **N8N-06** | Alerta de error | Una tarea agotó sus 3 intentos (Gmail no respondió) y, después, n8n no pudo conectarse a Supabase | Registro en la tabla `errores` y alerta por Telegram | ✅ Después de corregir el formato de la alerta (ver hallazgos) |
 | **N8N-07** | Una sola alerta por problema | Mandar la misma falla crítica al webhook de errores, dos veces juntas y una tercera después | La tercera se registra pero no alerta | ✅ Las dos simultáneas alertaron las dos (n8n guarda la memoria del workflow al terminar); la tercera, solo registro. En un corte las fallas llegan de a una por minuto |
+| **N8N-08** | Ensayo general, después de la migración 004 (23/10, de noche) | Con la base limpia, Lucía (`+lucia`) se registra, se la verifica y refiere a Martín (`+martin`) para Revit Specialist. Martín confirma, se lo contrata con el comando del mail, se adelanta `elegible_desde` a `hoy()`, se ejecuta la revisión a mano y se registra el pago | Cada mail en menos de 1 minuto, y el panel acompaña: "Waiting for candidate", "In selection process", "Hired" con la línea de meta, "Reward approved" y "Paid", con Earned en USD 600 | ✅ Todo el circuito. Gemini le dio **1/10**, porque el CV de demo era de un desarrollador Python, y pasada la medianoche las fechas del panel se cruzaron (ver hallazgos) |
 
 ### Mejoras de la landing (22/10, rama `mejoras-front`)
 
@@ -107,6 +108,9 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 | **Review externa:** un cambio de estado a mano generaba la recompensa aunque el candidato no hubiera confirmado | Review | La base solo deja pasar a "contratado" desde "en proceso", también a mano | Trigger `referidos_antes_de_cambio`, migración 004 |
 | **Review externa:** al volver a referir a alguien, su CV anterior quedaba en el bucket | Review | Se encola su borrado | `crear_referido`, migración 004 |
 | **Review externa:** texto escondido en un CV puede intentar inflar el puntaje | Review | Riesgo conocido: lo limitan el prompt, el validador y que el puntaje solo prioriza | Nota de decisiones (riesgos) |
+| **Ensayo (23/10):** el link de login caía en la home con `?code=…` y no iniciaba la sesión. La URL de producción no estaba en las *Redirect URLs* de Supabase, que en ese caso manda a la *Site URL* | N8N-08 | Configuración: *Site URL* y *Redirect URLs* con la URL de Vercel, y `localhost` para desarrollo | `landing/README.md` |
+| **Ensayo:** Gemini le dio 1/10 a Martín para Revit Specialist. El PDF subido era el correcto, pero el CV de demo describía a un desarrollador Python | N8N-08 | La IA acertó. Para la demo, un CV ficticio de arquitecto con Revit | Guion de la demo |
+| **Ensayo:** pasada la medianoche, el panel decía "referred Oct 23" y "Hired Oct 22". La base usa el día de Florida (migración 004) y la landing mostraba las fechas con la hora de Argentina | N8N-08 | La landing usa la zona del programa, igual que la base | `landing/lib/format.ts` |
 
 ---
 
@@ -114,9 +118,11 @@ Referente: la cuenta de Pedro (externo, `pedro.mazzieri24@gmail.com`). Candidato
 
 | Qué | Cuándo |
 |---|---|
-| Los mismos casos en la URL de Vercel (y el aviso de la pestaña con un login real). Los de n8n ya corrieron en Vercel | Después del deploy |
-| El rechazo del consentimiento con n8n: aviso "no confirmó" al referente y borrado del CV | Antes de la entrega (1 referido más) |
-| **E2E-11: registro repetido sin confirmar el mail.** Registrarse, no abrir el mail y volver a registrarse con los mismos datos: antes de los 60 s (¿qué mensaje sale?) y después, cambiando el nombre. Verificar que el primer link falla, que el segundo entra, que queda un solo referente y con qué datos, y qué pasa si esa persona intenta entrar por `/login` antes de confirmar. Hoy no lo cubre nadie: `tests.sql` inserta directo en la base y no pasa por Supabase Auth | Antes de la entrega (manual, 2 o 3 mails) |
+| Los rechazos de la landing (duplicado, tope, autorreferido) en la URL de Vercel. El circuito completo ya corrió ahí (N8N-08) | Antes de la demo |
+| El rechazo del consentimiento con n8n: aviso "no confirmó" al referente y borrado del CV | Antes de la demo (1 referido más) |
+| La anulación de la recompensa con n8n: el mail de anulación todavía no salió en vivo (la regla la cubre `tests.sql`) | Antes de la demo |
+| n8n apagado: referir y volver a prenderlo. La tarea tiene que salir sola en el primer minuto | Antes de la demo |
+| **E2E-11: registro repetido sin confirmar el mail.** Registrarse, no abrir el mail y volver a registrarse con los mismos datos: antes de los 60 s (¿qué mensaje sale?) y después, cambiando el nombre. Verificar que el primer link falla, que el segundo entra, que queda un solo referente y con qué datos, y qué pasa si esa persona intenta entrar por `/login` antes de confirmar. Hoy no lo cubre nadie: `tests.sql` inserta directo en la base y no pasa por Supabase Auth | Antes de la demo (manual, 2 o 3 mails) |
 
 ---
 

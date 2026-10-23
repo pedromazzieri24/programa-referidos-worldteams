@@ -39,6 +39,26 @@ Landing (Vercel) ──► Postgres en Supabase (las reglas) ──► cola de t
 └── PRUEBAS.md
 ```
 
+## Cómo probarlo en la landing publicada
+
+1. **Registrarse** en *Sign up* con un mail propio. El link para entrar lo manda Supabase, con un tope de 30 mails por hora para todo el proyecto.
+2. **Referir** a alguien desde *Refer*, con un CV en PDF. Para el candidato también conviene un mail propio (por ejemplo, un alias con `+`), porque recibe un pedido de confirmación real.
+3. **Confirmar** desde ese mail y seguir cada paso en *My referrals*.
+
+Los mails del programa (el pedido de confirmación, el aviso a recruiting con el puntaje de la IA, la contratación y la aprobación) los manda n8n, que en el MVP corre en local. Si no está corriendo, las tareas esperan en la cola y salen cuando vuelve; la landing y el panel funcionan igual. Los avisos internos de recruiting y administración llegan a casillas de prueba.
+
+Lo que después de la confirmación hace WorldTeams se corre hoy en el SQL Editor de Supabase; mañana lo haría el CRM:
+
+| Paso | Consulta |
+|---|---|
+| Verificar a un referente de WorldTeams que se registró sin el mail corporativo | `update referentes set tipo_verificado = true where email = '<mail>';` |
+| Contratar (el comando viene listo en el aviso a recruiting) | `select marcar_contratado('<id del referido>');` |
+| Cargar la baja de un contratado | `update referidos set fecha_baja = hoy() where id = '<id del referido>';` |
+| Simular que se cumplieron los 90 días | `update recompensas set elegible_desde = hoy() where referido_id = '<id del referido>';` y después ejecutar a mano el workflow *Revisión diaria* (o `select revision_diaria();`) |
+| Registrar el pago (el comando viene listo en el aviso a administración) | `select marcar_pagada('<id de la recompensa>', '<referencia>');` |
+
+Estas consultas necesitan acceso al proyecto de Supabase: en el publicado las corre quien lo opera, y en una copia propia, cualquiera (ver "Cómo correrlo"). `hoy()` es el día de Florida, el mismo que usan las reglas. Más consultas para verificar cada paso, en el anexo de [`PRUEBAS.md`](PRUEBAS.md).
+
 ## Cómo correrlo
 
 | Qué | Cómo |
@@ -55,4 +75,4 @@ Las claves secretas (Supabase, Gemini, SMTP, Telegram) viven solo en n8n y en Su
 |---|---|---|
 | Reglas del negocio | `supabase/tests.sql` en el SQL Editor (crea sus datos y los borra) | 41 |
 | Código de los nodos de n8n | `node n8n/test_js.js` | 25 |
-| De punta a punta (landing + base + n8n) | Manual, caso por caso en `PRUEBAS.md` | 19 |
+| De punta a punta (landing + base + n8n) | Manual, caso por caso en `PRUEBAS.md` | 20 |

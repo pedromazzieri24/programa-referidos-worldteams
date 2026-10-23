@@ -23,7 +23,7 @@ Next.js 16 (App Router, Server Components y Server Actions) + Supabase (Auth con
 ## Cómo correrla
 
 1. `cp .env.example .env.local` y completar la URL del proyecto y la clave publishable de Supabase.
-2. En Supabase: Authentication → URL Configuration → *Redirect URLs* con `http://localhost:3000/**` (y la URL de Vercel cuando se despliegue), y el SMTP propio configurado.
+2. En Supabase, *Authentication → URL Configuration*: *Site URL* = la URL de Vercel, y en *Redirect URLs* `https://<la-url-de-vercel>/**` y `http://localhost:3000/**`. Si falta la de Vercel, el link del mail cae en la home con `?code=…` y no inicia la sesión. También el SMTP propio configurado.
 3. `npm install` y `npm run dev` → http://localhost:3000
 
 El link del mail tiene que abrirse en el mismo navegador donde se pidió.
