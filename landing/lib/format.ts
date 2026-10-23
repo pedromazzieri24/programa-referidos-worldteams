@@ -1,7 +1,8 @@
-// Vercel corre en UTC: se fija la zona de Argentina para que la fecha no se corra un día.
+// Vercel corre en UTC: se fija la zona del programa (Florida, la misma que usa la base) para que las fechas
+// del panel coincidan con las de las reglas (el día de la contratación, el del pago).
 const fechaFormat = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
-  timeZone: "America/Argentina/Buenos_Aires",
+  timeZone: "America/New_York",
 });
 
 export function formatFecha(iso: string) {
@@ -17,8 +18,8 @@ export function formatUsd(monto: number) {
   return `USD ${monto.toLocaleString("en-US")}`;
 }
 
-// Días que faltan hasta una fecha (`date`), contando desde hoy en Argentina.
+// Días que faltan hasta una fecha (`date`), contando desde hoy en Florida, como la revisión diaria.
 export function diasHasta(dia: string) {
-  const hoy = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }));
+  const hoy = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
   return Math.round((new Date(dia).getTime() - hoy.getTime()) / 86_400_000);
 }
