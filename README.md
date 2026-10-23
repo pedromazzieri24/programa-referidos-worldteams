@@ -57,7 +57,7 @@ Lo que después de la confirmación hace WorldTeams se corre hoy en el SQL Edito
 | Simular que se cumplieron los 90 días | `update recompensas set elegible_desde = hoy() where referido_id = '<id del referido>';` y después ejecutar a mano el workflow *Revisión diaria* (o `select revision_diaria();`) |
 | Registrar el pago (el comando viene listo en el aviso a administración) | `select marcar_pagada('<id de la recompensa>', '<referencia>');` |
 
-`hoy()` es el día de Florida, el mismo que usan las reglas. Más consultas para verificar cada paso, en el anexo de [`PRUEBAS.md`](PRUEBAS.md).
+Estas consultas necesitan acceso al proyecto de Supabase: en el publicado las corre quien lo opera, y en una copia propia, cualquiera (ver "Cómo correrlo"). `hoy()` es el día de Florida, el mismo que usan las reglas. Más consultas para verificar cada paso, en el anexo de [`PRUEBAS.md`](PRUEBAS.md).
 
 ## Cómo correrlo
 
